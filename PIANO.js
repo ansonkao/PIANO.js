@@ -54,4 +54,4 @@ var PIANO = function(a) {
     }, a;
 }(PIANO || {});
 
-PIANO.init(document.getElementById("sequencer"));
+PIANO.init(document.getElementById("target"));

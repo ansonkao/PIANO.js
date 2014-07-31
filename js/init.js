@@ -178,4 +178,4 @@ var PIANO = (function($){
 
 })(PIANO || {});
 
-PIANO.init( document.getElementById( 'sequencer' ) );
+PIANO.init( document.getElementById('target') );

@@ -40,14 +40,13 @@ var PIANO = function(a) {
         a.sequencer.canvas.fillStyle = "#DDDDDD";
         for (var b = a.sequencer.percent2note(a.sequencer.noteStart); b <= a.sequencer.percent2note(a.sequencer.noteStop); b++) {
             var c = a.fn.closestHalfPixel(((b - 1) / a.config.keyboard_range - a.sequencer.noteStart) / a.sequencer.noteRange() * a.sequencer.height), d = a.fn.closestHalfPixel((b / a.config.keyboard_range - a.sequencer.noteStart) / a.sequencer.noteRange() * a.sequencer.height);
-            switch (c > .5 && a.sequencer.canvas.drawLine(0, c, a.sequencer.width, c), b % 12) {
-              case 3:
-              case 5:
-              case 7:
-              case 10:
-              case 0:
-                a.sequencer.canvas.fillRect(0, d, a.sequencer.width, c - d);
-            }
+            c > .5 && a.sequencer.canvas.drawLine(0, c, a.sequencer.width, c), b % 12 in {
+                3: !0,
+                5: !0,
+                7: !0,
+                10: !0,
+                0: !0
+            } && a.sequencer.canvas.fillRect(0, d, a.sequencer.width, c - d);
         }
     }, a.render.paint = function() {
         console.debug("PIANO.render.paint()"), a.sequencer.canvas.stroke();

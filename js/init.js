@@ -147,13 +147,8 @@ var PIANO = (function($){
         $.sequencer.canvas.drawLine( 0, prev_edge, $.sequencer.width, prev_edge );
 
       // Fill the row for the black keys
-      switch( note % 12 )
-      {
-        case 3: case 5: case 7: case 10: case 0:
+      if( note % 12 in {3:true, 5:true, 7:true, 10:true, 0:true} )
           $.sequencer.canvas.fillRect( 0, next_edge, $.sequencer.width, prev_edge - next_edge );
-        default:
-          // do nothing...
-      }
     }
   };
 

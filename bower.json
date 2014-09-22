@@ -1,0 +1,25 @@
+{
+  "name": "piano-js",
+  "version": "0.0.0",
+  "homepage": "http://ansonkao.github.io/piano-js/",
+  "authors": [
+    "Anson Kao <anson.kao@gmail.com>"
+  ],
+  "description": "Browser-based MIDI piano sequencer.",
+  "main": "PIANO.js",
+  "keywords": [
+    "piano",
+    "sequencer",
+    "web-audio",
+    "web-midi",
+    "music"
+  ],
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ]
+}

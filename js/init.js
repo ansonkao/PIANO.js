@@ -72,10 +72,20 @@ var PIANO = (function(){
            * values and the discrepancy will lead to sub-pixel blending and fuzzy lines.
            */ 
 
+        var notes =
+          [ { key: 10, position: 0.00, length: 0.50 }
+          , { key: 14, position: 0.25, length: 1.00 }
+          , { key: 17, position: 0.50, length: 0.75 }
+          , { key: 22, position: 0.75, length: 0.50 }
+          , { key: 24, position: 1.00, length: 0.25 }
+          , { key: 22, position: 1.25, length: 0.25 }
+          ];
+
         this.canvasContext.clear();
         this.canvasContext.backgroundFill('#EEEEEE');
         this.renderKeyScale();
         this.renderTimeScale();
+        this.renderNotes(notes);
       };
     
     // Render the staff (black and white rows)
@@ -83,8 +93,8 @@ var PIANO = (function(){
       {
         // Styles
         this.canvasContext.lineWidth   = 1.0;
-        this.canvasContext.strokeStyle = "#D4D4D4";
-        this.canvasContext.fillStyle   = "#DDDDDD";
+        this.canvasContext.strokeStyle = "#D4D4E0";
+        this.canvasContext.fillStyle   = "#DDDDE4";
 
         // Each edge + black key fills
         for( var key  = this.percentToKey( this.keyScale.min )
@@ -122,7 +132,7 @@ var PIANO = (function(){
         {
           // Start each line as a separate path (different colors)
           this.canvasContext.beginPath();
-          this.canvasContext.strokeStyle = ( bar % 1 ) ? "#CCC" : "#AAA";
+          this.canvasContext.strokeStyle = ( bar % 1 ) ? "#CCD" : "#AAB";
 
           var xPosition = Math.closestHalfPixel( ( ( bar / this.clipLength ) - this.timeScale.min ) / this.getTimeRange() * this.width );
           this.canvasContext.drawLine( xPosition, 0, xPosition, this.height );
@@ -133,6 +143,26 @@ var PIANO = (function(){
       };
 
     // Draw the Notes in
+    this.renderNotes = function(notes)
+      {
+        // Styles
+        this.canvasContext.lineWidth   = 1.0;
+        this.canvasContext.strokeStyle = "#812";
+        this.canvasContext.fillStyle   = "#F24";
+
+        for( var i = 0; i < notes.length; i++ )
+        {
+          var x1 = Math.closestHalfPixel( ( ( notes[i].position / this.clipLength    ) - this.timeScale.min ) / this.getTimeRange() * this.width  );
+          var y1 = Math.closestHalfPixel( ( ( notes[i].key      / this.keyboardRange ) - this.keyScale.min  ) / this.getKeyRange()  * this.height );
+          var x2 = Math.closestHalfPixel( ( ( ( notes[i].position + notes[i].length ) / this.clipLength    ) - this.timeScale.min ) / this.getTimeRange() * this.width  );
+          var y2 = Math.closestHalfPixel( ( ( ( notes[i].key      + 1               ) / this.keyboardRange ) - this.keyScale.min  ) / this.getKeyRange()  * this.height );
+          this.canvasContext.fillRect  ( x1 + 1, y1 + 2, x2 - x1 - 3, y2 - y1 - 4 );
+          this.canvasContext.strokeRect( x1 + 0, y1 + 1, x2 - x1 - 1, y2 - y1 - 2 );
+        }
+
+        // Stroke it all at the end!
+        this.canvasContext.stroke();
+      };
 
     // ------------------------------------------------------------------------
     // Construction of each PianoRoll instance

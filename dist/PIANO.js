@@ -1,12 +1,12 @@
 var PIANO = function() {
     function a(a) {
         this.canvas = a.appendChild(document.createElement("canvas")), this.canvas.className = "piano-canvas", 
-        this.canvasContext = this.canvas.getContext("2d"), this.keyboardRange = 88, this.width = null, 
+        this.canvasContext = this.canvas.getContext("2d"), this.keyboardRange = 88, this.clipLength = this.width = null, 
         this.height = null, this.timeScale = {
             min: 0,
             max: 1
         }, this.noteScale = {
-            min: .75,
+            min: .5,
             max: 1
         }, this.getTimeRange = function() {
             return this.timeScale.max - this.timeScale.min;
@@ -30,7 +30,19 @@ var PIANO = function() {
                 } && this.canvasContext.fillRect(0, c, this.width, b - c);
             }
             this.canvasContext.stroke();
-        }, this.init();
+        };
+        var b = this;
+        b.init(), b.init(), a.addEventListener("gripscroll-update", function(a) {
+            switch (a.direction) {
+              case "x":
+                b.timeScale.min = a.min, b.timeScale.max = a.max;
+                break;
+
+              case "y":
+                b.noteScale.min = a.min, b.noteScale.max = a.max;
+            }
+            b.init();
+        });
     }
     var b = [], c = [], d = function(d, e) {
         for (var f = 0; f < b.length; f++) if (b[f] == d) return;

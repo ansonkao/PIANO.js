@@ -41,12 +41,13 @@ var PIANO = (function(){
 
     // Model
     this.keyboardRange = 88;
+    this.clipLength    = 
     this.width         = null;
     this.height        = null;
     this.timeScale     = { min: 0.000
                          , max: 1.000
                          };
-    this.noteScale     = { min: 0.750
+    this.noteScale     = { min: 0.500
                          , max: 1.000
                          };
 
@@ -113,7 +114,22 @@ var PIANO = (function(){
     // Draw the columns (time-scale)
     // ...
 
-    this.init();
+    // ------------------------------------------------------------------------
+    // Construction of each PianoRoll instance
+    // ------------------------------------------------------------------------
+    // Initialize!
+    var that = this;
+        that.init();
+    that.init();
+    container.addEventListener('gripscroll-update', function (e){
+      switch( e.direction )
+      {
+        case 'x': that.timeScale.min = e.min; that.timeScale.max = e.max; break;
+        case 'y': that.noteScale.min = e.min; that.noteScale.max = e.max; break;
+      }
+      that.init();
+    });
+
   }
   //
   // End of PianoRoll definition

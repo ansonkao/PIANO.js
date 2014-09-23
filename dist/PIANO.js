@@ -1,48 +1,53 @@
-var PIANO = function(a) {
-    return a.config = a.config || {}, a.config.keyboard_range = 88, a.config.xy_flip = !1, 
-    a.fn = {}, a.fn.closestHalfPixel = function(a) {
-        return parseInt(.5 + a) - .5;
-    }, a.fn.isDomElement = function(a) {
-        return "object" == typeof HTMLElement ? a instanceof HTMLElement : a && "object" == typeof a && null !== a && 1 === a.nodeType && "string" == typeof a.nodeName;
-    }, CanvasRenderingContext2D.prototype.drawLine = function(b, c, d, e) {
-        a.config.xy_flip && (b = [ c, c = b ][0], d = [ e, e = d ][0]), this.moveTo(b, c), 
-        this.lineTo(d, e);
-    }, a.sequencer = {}, a.sequencer.timeRange = function() {
-        return a.sequencer.timeStop - a.sequencer.timeStart;
-    }, a.sequencer.noteRange = function() {
-        return a.sequencer.noteStop - a.sequencer.noteStart;
-    }, a.sequencer.percent2note = function(b) {
-        return Math.ceil(b * a.config.keyboard_range);
-    }, a.init = function(b) {
-        return console.debug("PIANO.init()"), a.fn.isDomElement(b) ? (a.sequencer.wrapper = b, 
-        a.sequencer.wrapper.classList.add("piano-wrapper"), a.sequencer.el = a.sequencer.wrapper.appendChild(document.createElement("canvas")), 
-        a.sequencer.el.className = "piano-staff", a.sequencer.canvas = a.sequencer.el.getContext("2d"), 
-        void a.render.launch()) : void console.error("PIANO.init() FAILED - Invalid starting DOM element.");
-    }, a.render = {}, a.render.launch = function() {
-        console.debug("PIANO.render.launch()"), a.render.reset(0, 1, .5, .75), a.render.background(), 
-        a.render.note_scale(), a.render.paint();
-    }, a.render.reset = function(b, c, d, e) {
-        console.debug("PIANO.render.reset()"), a.sequencer.el.width = a.sequencer.width = a.sequencer.wrapper.clientWidth, 
-        a.sequencer.el.height = a.sequencer.height = a.sequencer.wrapper.clientHeight, a.sequencer.el.style.width = a.sequencer.width + "px", 
-        a.sequencer.el.style.height = a.sequencer.height + "px", a.sequencer.timeStart = b, 
-        a.sequencer.timeStop = c, a.sequencer.noteStart = d, a.sequencer.noteStop = e;
-    }, a.render.background = function() {
-        console.debug("PIANO.render.background()"), a.sequencer.canvas.fillStyle = "#EEEEEE", 
-        a.sequencer.canvas.fillRect(0, 0, a.sequencer.width, a.sequencer.height);
-    }, a.render.note_scale = function() {
-        console.debug("PIANO.render.note_scale()"), a.sequencer.canvas.lineWidth = 1, a.sequencer.canvas.strokeStyle = "#D4D4D4", 
-        a.sequencer.canvas.fillStyle = "#DDDDDD";
-        for (var b = a.sequencer.percent2note(a.sequencer.noteStart); b <= a.sequencer.percent2note(a.sequencer.noteStop); b++) {
-            var c = a.fn.closestHalfPixel(((b - 1) / a.config.keyboard_range - a.sequencer.noteStart) / a.sequencer.noteRange() * a.sequencer.height), d = a.fn.closestHalfPixel((b / a.config.keyboard_range - a.sequencer.noteStart) / a.sequencer.noteRange() * a.sequencer.height);
-            c > .5 && a.sequencer.canvas.drawLine(0, c, a.sequencer.width, c), b % 12 in {
-                3: !0,
-                5: !0,
-                7: !0,
-                10: !0,
-                0: !0
-            } && a.sequencer.canvas.fillRect(0, d, a.sequencer.width, c - d);
-        }
-    }, a.render.paint = function() {
-        console.debug("PIANO.render.paint()"), a.sequencer.canvas.stroke();
-    }, a;
-}(PIANO || {});
+var PIANO = function() {
+    function a(a) {
+        this.canvas = a.appendChild(document.createElement("canvas")), this.canvas.className = "piano-canvas", 
+        this.canvasContext = this.canvas.getContext("2d"), this.keyboardRange = 88, this.width = null, 
+        this.height = null, this.timeScale = {
+            min: 0,
+            max: 1
+        }, this.noteScale = {
+            min: .75,
+            max: 1
+        }, this.getTimeRange = function() {
+            return this.timeScale.max - this.timeScale.min;
+        }, this.getNoteRange = function() {
+            return this.noteScale.max - this.noteScale.min;
+        }, this.percentToNote = function(a) {
+            return Math.ceil(a * this.keyboardRange);
+        }, this.init = function() {
+            this.canvas.width = this.width = a.clientWidth, this.canvas.height = this.height = a.clientHeight, 
+            this.canvasContext.clear(), this.canvasContext.backgroundFill("#EEEEEE"), this.renderNoteScale();
+        }, this.renderNoteScale = function() {
+            this.canvasContext.lineWidth = 1, this.canvasContext.strokeStyle = "#D4D4D4", this.canvasContext.fillStyle = "#DDDDDD";
+            for (var a = this.percentToNote(this.noteScale.min); a <= this.percentToNote(this.noteScale.max); a++) {
+                var b = Math.closestHalfPixel(((a - 1) / this.keyboardRange - this.noteScale.min) / this.getNoteRange() * this.height), c = Math.closestHalfPixel((a / this.keyboardRange - this.noteScale.min) / this.getNoteRange() * this.height);
+                b > .5 && this.canvasContext.drawLine(0, b, this.width, b, this.xyFlip), a % 12 in {
+                    3: !0,
+                    5: !0,
+                    7: !0,
+                    10: !0,
+                    0: !0
+                } && this.canvasContext.fillRect(0, c, this.width, b - c);
+            }
+            this.canvasContext.stroke();
+        }, this.init();
+    }
+    var b = [], c = [], d = function(d, e) {
+        for (var f = 0; f < b.length; f++) if (b[f] == d) return;
+        b.push(d), c.push({
+            x: new a(d, e),
+            y: new a(d, e)
+        });
+    };
+    return {
+        add: d
+    };
+}();
+
+Math.closestHalfPixel = Math.closestHalfPixel || function(a) {
+    return parseInt(.5 + a) - .5;
+}, CanvasRenderingContext2D.prototype.drawLine = CanvasRenderingContext2D.prototype.drawLine || function(a, b, c, d, e) {
+    e && (a = [ b, b = a ][0], c = [ d, d = c ][0]), this.moveTo(a, b), this.lineTo(c, d);
+}, CanvasRenderingContext2D.prototype.backgroundFill = CanvasRenderingContext2D.prototype.backgroundFill || function(a) {
+    this.fillStyle = a, this.fillRect(0, 0, this.canvas.width, this.canvas.height);
+};

@@ -1,71 +1,7 @@
-.piano-wrapper {
-  position: relative;
-  padding-right: 20px;
-  padding-bottom: 20px;
-  box-sizing: border-box;
-}
-.piano-wrapper .piano-staff {
+.piano-canvas {
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-}
-.piano-wrapper > .scroll {
-  position: absolute;
-}
-.piano-wrapper > .scroll.x {
-  bottom: 0;
-  left: 0;
-  right: 18px;
-  height: 10px;
-}
-.piano-wrapper > .scroll.y {
-  top: 0;
-  right: 0;
-  bottom: 18px;
-  width: 10px;
-}
-.piano-wrapper > .scroll > .bar {
-  position: absolute;
-  border: 1px solid #999;
-  border-radius: 5px;
-  background-color: #AAA;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-}
-.piano-wrapper > .scroll > .bar:before,
-.piano-wrapper > .scroll > .bar:after {
-  content: "";
-  position: absolute;
-}
-.piano-wrapper > .scroll > .bar.x:before {
-  cursor: col-resize;
-  top: 0;
-  left: -5px;
-  bottom: 0;
-  width: 10px;
-}
-.piano-wrapper > .scroll > .bar.x:after {
-  cursor: col-resize;
-  top: 0;
-  right: -5px;
-  bottom: 0;
-  width: 10px;
-}
-.piano-wrapper > .scroll > .bar.y:before {
-  cursor: row-resize;
-  left: 0;
-  top: -5px;
-  right: 0;
-  height: 10px;
-}
-.piano-wrapper > .scroll > .bar.y:after {
-  cursor: row-resize;
-  left: 0;
-  bottom: -5px;
-  right: 0;
-  height: 10px;
 }

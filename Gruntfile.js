@@ -6,14 +6,14 @@ module.exports = function(grunt) {
     less: {
       dev: {
         files: {
-          "PIANO.css": "less/*.less"
+          "dist/PIANO.css": "less/*.less"
         }
       }
     },
     uglify: {
       dev: {
         files: {
-          "PIANO.js": "js/*.js"
+          "dist/PIANO.js": "js/*.js"
         },
         options: {
           beautify: true

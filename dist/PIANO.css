@@ -4,9 +4,12 @@
   padding-bottom: 20px;
   box-sizing: border-box;
 }
-.piano-wrapper > canvas {
-  border: 1px solid #BBB;
-  border-radius: 5px;
+.piano-wrapper .piano-staff {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
 }
 .piano-wrapper > .scroll {
   position: absolute;

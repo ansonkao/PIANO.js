@@ -15,23 +15,17 @@ var PIANO = function(a) {
         return Math.ceil(b * a.config.keyboard_range);
     }, a.init = function(b) {
         return console.debug("PIANO.init()"), a.fn.isDomElement(b) ? (a.sequencer.wrapper = b, 
-        a.sequencer.wrapper.className = "piano-wrapper", a.sequencer.el = a.sequencer.wrapper.appendChild(document.createElement("canvas")), 
-        a.sequencer.canvas = a.sequencer.el.getContext("2d"), a.sequencer.scrollX = a.sequencer.wrapper.appendChild(document.createElement("div")), 
-        a.sequencer.scrollY = a.sequencer.wrapper.appendChild(document.createElement("div")), 
-        a.sequencer.scrollX.className = "scroll x", a.sequencer.scrollY.className = "scroll y", 
-        a.sequencer.scrollBarX = a.sequencer.scrollX.appendChild(document.createElement("div")), 
-        a.sequencer.scrollBarY = a.sequencer.scrollY.appendChild(document.createElement("div")), 
-        a.sequencer.scrollBarX.className = "bar x", a.sequencer.scrollBarY.className = "bar y", 
+        a.sequencer.wrapper.classList.add("piano-wrapper"), a.sequencer.el = a.sequencer.wrapper.appendChild(document.createElement("canvas")), 
+        a.sequencer.el.className = "piano-staff", a.sequencer.canvas = a.sequencer.el.getContext("2d"), 
         void a.render.launch()) : void console.error("PIANO.init() FAILED - Invalid starting DOM element.");
     }, a.render = {}, a.render.launch = function() {
         console.debug("PIANO.render.launch()"), a.render.reset(0, 1, .5, .75), a.render.background(), 
         a.render.note_scale(), a.render.paint();
     }, a.render.reset = function(b, c, d, e) {
-        console.debug("PIANO.render.reset()"), a.sequencer.el.width = a.sequencer.width = a.sequencer.wrapper.clientWidth - 20, 
-        a.sequencer.el.height = a.sequencer.height = a.sequencer.wrapper.clientHeight - 20, 
-        a.sequencer.el.style.width = a.sequencer.width + "px", a.sequencer.el.style.height = a.sequencer.height + "px", 
-        a.sequencer.timeStart = b, a.sequencer.timeStop = c, a.sequencer.noteStart = d, 
-        a.sequencer.noteStop = e;
+        console.debug("PIANO.render.reset()"), a.sequencer.el.width = a.sequencer.width = a.sequencer.wrapper.clientWidth, 
+        a.sequencer.el.height = a.sequencer.height = a.sequencer.wrapper.clientHeight, a.sequencer.el.style.width = a.sequencer.width + "px", 
+        a.sequencer.el.style.height = a.sequencer.height + "px", a.sequencer.timeStart = b, 
+        a.sequencer.timeStop = c, a.sequencer.noteStart = d, a.sequencer.noteStop = e;
     }, a.render.background = function() {
         console.debug("PIANO.render.background()"), a.sequencer.canvas.fillStyle = "#EEEEEE", 
         a.sequencer.canvas.fillRect(0, 0, a.sequencer.width, a.sequencer.height);
@@ -52,5 +46,3 @@ var PIANO = function(a) {
         console.debug("PIANO.render.paint()"), a.sequencer.canvas.stroke();
     }, a;
 }(PIANO || {});
-
-PIANO.init(document.getElementById("target"));

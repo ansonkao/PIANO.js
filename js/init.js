@@ -57,17 +57,10 @@ var PIANO = (function($){
     }
 
     $.sequencer.wrapper = el;
-    $.sequencer.wrapper.className = 'piano-wrapper';
+    $.sequencer.wrapper.classList.add('piano-wrapper');
     $.sequencer.el = $.sequencer.wrapper.appendChild( document.createElement('canvas') );
+    $.sequencer.el.className = 'piano-staff';
     $.sequencer.canvas = $.sequencer.el.getContext("2d");
-    $.sequencer.scrollX = $.sequencer.wrapper.appendChild( document.createElement('div') );
-    $.sequencer.scrollY = $.sequencer.wrapper.appendChild( document.createElement('div') );
-    $.sequencer.scrollX.className = 'scroll x';
-    $.sequencer.scrollY.className = 'scroll y';
-    $.sequencer.scrollBarX = $.sequencer.scrollX.appendChild( document.createElement('div') );
-    $.sequencer.scrollBarY = $.sequencer.scrollY.appendChild( document.createElement('div') );
-    $.sequencer.scrollBarX.className = 'bar x';
-    $.sequencer.scrollBarY.className = 'bar y';
 
     $.render.launch();
   };
@@ -94,8 +87,8 @@ var PIANO = (function($){
     console.debug( 'PIANO.render.reset()' );
 
     // Reset dimensions
-    $.sequencer.el.width  = $.sequencer.width  = $.sequencer.wrapper.clientWidth  - 20;
-    $.sequencer.el.height = $.sequencer.height = $.sequencer.wrapper.clientHeight - 20;
+    $.sequencer.el.width  = $.sequencer.width  = $.sequencer.wrapper.clientWidth;
+    $.sequencer.el.height = $.sequencer.height = $.sequencer.wrapper.clientHeight;
     $.sequencer.el.style.width  = $.sequencer.width  + 'px';
     $.sequencer.el.style.height = $.sequencer.height + 'px';
       /* ^ clientWidth/clientHeight return rounded integer value from the parent
@@ -172,5 +165,3 @@ var PIANO = (function($){
   return $;
 
 })(PIANO || {});
-
-PIANO.init( document.getElementById('target') );

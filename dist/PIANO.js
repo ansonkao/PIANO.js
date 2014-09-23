@@ -1,26 +1,29 @@
 var PIANO = function() {
     function a(a) {
         this.canvas = a.appendChild(document.createElement("canvas")), this.canvas.className = "piano-canvas", 
-        this.canvasContext = this.canvas.getContext("2d"), this.keyboardRange = 88, this.clipLength = this.width = null, 
-        this.height = null, this.timeScale = {
+        this.canvasContext = this.canvas.getContext("2d"), this.keyboardRange = 25, this.clipLength = 4, 
+        this.width = null, this.height = null, this.timeScale = {
             min: 0,
             max: 1
-        }, this.noteScale = {
+        }, this.keyScale = {
             min: .5,
             max: 1
         }, this.getTimeRange = function() {
             return this.timeScale.max - this.timeScale.min;
-        }, this.getNoteRange = function() {
-            return this.noteScale.max - this.noteScale.min;
-        }, this.percentToNote = function(a) {
+        }, this.getKeyRange = function() {
+            return this.keyScale.max - this.keyScale.min;
+        }, this.percentToKey = function(a) {
             return Math.ceil(a * this.keyboardRange);
+        }, this.percentToBar = function(a) {
+            return Math.ceil(a * this.clipLength);
         }, this.init = function() {
             this.canvas.width = this.width = a.clientWidth, this.canvas.height = this.height = a.clientHeight, 
-            this.canvasContext.clear(), this.canvasContext.backgroundFill("#EEEEEE"), this.renderNoteScale();
-        }, this.renderNoteScale = function() {
+            this.canvasContext.clear(), this.canvasContext.backgroundFill("#EEEEEE"), this.renderKeyScale(), 
+            this.renderTimeScale();
+        }, this.renderKeyScale = function() {
             this.canvasContext.lineWidth = 1, this.canvasContext.strokeStyle = "#D4D4D4", this.canvasContext.fillStyle = "#DDDDDD";
-            for (var a = this.percentToNote(this.noteScale.min); a <= this.percentToNote(this.noteScale.max); a++) {
-                var b = Math.closestHalfPixel(((a - 1) / this.keyboardRange - this.noteScale.min) / this.getNoteRange() * this.height), c = Math.closestHalfPixel((a / this.keyboardRange - this.noteScale.min) / this.getNoteRange() * this.height);
+            for (var a = this.percentToKey(this.keyScale.min); a <= this.percentToKey(this.keyScale.max); a++) {
+                var b = Math.closestHalfPixel(((a - 1) / this.keyboardRange - this.keyScale.min) / this.getKeyRange() * this.height), c = Math.closestHalfPixel((a / this.keyboardRange - this.keyScale.min) / this.getKeyRange() * this.height);
                 b > .5 && this.canvasContext.drawLine(0, b, this.width, b, this.xyFlip), a % 12 in {
                     3: !0,
                     5: !0,
@@ -30,6 +33,13 @@ var PIANO = function() {
                 } && this.canvasContext.fillRect(0, c, this.width, b - c);
             }
             this.canvasContext.stroke();
+        }, this.renderTimeScale = function() {
+            this.canvasContext.lineWidth = 1;
+            for (var a = this.percentToBar(this.timeScale.min) - 1; a <= this.percentToBar(this.timeScale.max); a += .25) {
+                this.canvasContext.beginPath(), this.canvasContext.strokeStyle = a % 1 ? "#CCC" : "#AAA";
+                var b = Math.closestHalfPixel((a / this.clipLength - this.timeScale.min) / this.getTimeRange() * this.width);
+                this.canvasContext.drawLine(b, 0, b, this.height), this.canvasContext.stroke();
+            }
         };
         var b = this;
         b.init(), b.init(), a.addEventListener("gripscroll-update", function(a) {
@@ -39,7 +49,7 @@ var PIANO = function() {
                 break;
 
               case "y":
-                b.noteScale.min = a.min, b.noteScale.max = a.max;
+                b.keyScale.min = a.min, b.keyScale.max = a.max;
             }
             b.init();
         });

@@ -40,14 +40,14 @@ var PIANO = (function(){
     this.canvasContext = this.canvas.getContext("2d");
 
     // Model
-    this.keyboardRange = 88;
-    this.clipLength    = 
+    this.keyboardRange = 25;    // 88 keys in a piano
+    this.clipLength    = 4;     // ...in bars. 2.125 means 2 bars and 1/8th note long
     this.width         = null;
     this.height        = null;
     this.timeScale     = { min: 0.000
                          , max: 1.000
                          };
-    this.noteScale     = { min: 0.500
+    this.keyScale      = { min: 0.500
                          , max: 1.000
                          };
 
@@ -56,10 +56,10 @@ var PIANO = (function(){
     // Methods
     // ------------------------------------------------------------------------
     // Sequencer Coordinates - Helper Methods
-    this.getTimeRange  = function(){ return this.timeScale.max - this.timeScale.min; };
-    this.getNoteRange  = function(){ return this.noteScale.max - this.noteScale.min; };
-    this.percentToNote = function(percent){ return Math.ceil( percent * this.keyboardRange ); }; // Where percent is between 0.000 and 1.000
-
+    this.getTimeRange = function(){ return this.timeScale.max - this.timeScale.min; };
+    this.getKeyRange  = function(){ return this.keyScale.max  - this.keyScale.min;  };
+    this.percentToKey = function(percent){ return Math.ceil( percent * this.keyboardRange ); }; // Where percent is between 0.000 and 1.000
+    this.percentToBar = function(percent){ return Math.ceil( percent * this.clipLength    ); }; // Where percent is between 0.000 and 1.000
 
     // Reset the canvas parameters and redraw it!
     this.init = function()
@@ -67,10 +67,6 @@ var PIANO = (function(){
         // Reset dimensions
         this.canvas.width  = this.width  = container.clientWidth;
         this.canvas.height = this.height = container.clientHeight;
-
-        //this.canvas.style.width  = this.width  + 'px';
-        //this.canvas.style.height = this.height + 'px';
-
           /* ^ clientWidth/clientHeight return rounded integer value from the parent
            * wrapper. If we use getBoundingClientRect() instead, we'll get non-integer
            * values and the discrepancy will lead to sub-pixel blending and fuzzy lines.
@@ -78,11 +74,12 @@ var PIANO = (function(){
 
         this.canvasContext.clear();
         this.canvasContext.backgroundFill('#EEEEEE');
-        this.renderNoteScale();
+        this.renderKeyScale();
+        this.renderTimeScale();
       };
     
-    // Render the note-scale (black and white rows)
-    this.renderNoteScale = function()
+    // Render the staff (black and white rows)
+    this.renderKeyScale = function()
       {
         // Styles
         this.canvasContext.lineWidth   = 1.0;
@@ -90,29 +87,52 @@ var PIANO = (function(){
         this.canvasContext.fillStyle   = "#DDDDDD";
 
         // Each edge + black key fills
-        for( var note  = this.percentToNote( this.noteScale.min )
-           ;     note <= this.percentToNote( this.noteScale.max )
-           ;     note++
+        for( var key  = this.percentToKey( this.keyScale.min )
+           ;     key <= this.percentToKey( this.keyScale.max )
+           ;     key++
            )
         {
-          var prev_edge = Math.closestHalfPixel( ( ( (note-1) / this.keyboardRange ) - this.noteScale.min ) / this.getNoteRange() * this.height );
-          var next_edge = Math.closestHalfPixel( ( (  note    / this.keyboardRange ) - this.noteScale.min ) / this.getNoteRange() * this.height );
+          var prevEdge = Math.closestHalfPixel( ( ( (key-1) / this.keyboardRange ) - this.keyScale.min ) / this.getKeyRange() * this.height );
+          var nextEdge = Math.closestHalfPixel( ( (  key    / this.keyboardRange ) - this.keyScale.min ) / this.getKeyRange() * this.height );
 
           // Stroke the edge between rows
-          if( prev_edge > 0.5 ) // Skip first edge (we have a border to serve that purpose)
-            this.canvasContext.drawLine( 0, prev_edge, this.width, prev_edge, this.xyFlip );
+          if( prevEdge > 0.5 ) // Skip first edge (we have a border to serve that purpose)
+            this.canvasContext.drawLine( 0, prevEdge, this.width, prevEdge, this.xyFlip );
 
           // Fill the row for the black keys
-          if( note % 12 in {3:true, 5:true, 7:true, 10:true, 0:true} )
-            this.canvasContext.fillRect( 0, next_edge, this.width, prev_edge - next_edge );
+          if( key % 12 in {3:true, 5:true, 7:true, 10:true, 0:true} )
+            this.canvasContext.fillRect( 0, nextEdge, this.width, prevEdge - nextEdge );
         }
 
+        // Stroke it all at the end!
         this.canvasContext.stroke();
       };
 
-
     // Draw the columns (time-scale)
-    // ...
+    this.renderTimeScale = function()
+      {
+        // Styles
+        this.canvasContext.lineWidth   = 1.0;
+
+        // Draw lines for each beat
+        for( var bar  = this.percentToBar( this.timeScale.min ) - 1
+           ;     bar <= this.percentToBar( this.timeScale.max )
+           ;     bar += 0.25
+           )
+        {
+          // Start each line as a separate path (different colors)
+          this.canvasContext.beginPath();
+          this.canvasContext.strokeStyle = ( bar % 1 ) ? "#CCC" : "#AAA";
+
+          var xPosition = Math.closestHalfPixel( ( ( bar / this.clipLength ) - this.timeScale.min ) / this.getTimeRange() * this.width );
+          this.canvasContext.drawLine( xPosition, 0, xPosition, this.height );
+
+          // Draw each line (different colors)
+          this.canvasContext.stroke();
+        }
+      };
+
+    // Draw the Notes in
 
     // ------------------------------------------------------------------------
     // Construction of each PianoRoll instance
@@ -125,7 +145,7 @@ var PIANO = (function(){
       switch( e.direction )
       {
         case 'x': that.timeScale.min = e.min; that.timeScale.max = e.max; break;
-        case 'y': that.noteScale.min = e.min; that.noteScale.max = e.max; break;
+        case 'y': that.keyScale.min  = e.min; that.keyScale.max  = e.max; break;
       }
       that.init();
     });

@@ -8,7 +8,8 @@ var PIANO = function() {
         }, this.keyScale = {
             min: 0,
             max: 1
-        }, this.notes = b.notes || [], this.isDragging = !1, this.isHovering = !1, this.getTimeRange = function() {
+        }, this.notes = b.notes || [], this.hoveredNotes = [], this.isDragging = !1, this.isHovering = !1, 
+        this.getTimeRange = function() {
             return this.timeScale.max - this.timeScale.min;
         }, this.getKeyRange = function() {
             return this.keyScale.max - this.keyScale.min;
@@ -16,6 +17,23 @@ var PIANO = function() {
             return Math.ceil(a * this.keyboardSize);
         }, this.percentToBar = function(a) {
             return Math.ceil(a * this.clipLength);
+        }, this.barToPixels = function(a) {
+            return a / this.clipLength / this.getTimeRange() * this.width;
+        }, this.keyToPixels = function(a) {
+            return a / this.keyboardSize / this.getKeyRange() * this.height;
+        }, this.barToXCoord = function(a) {
+            return (a / this.clipLength - this.timeScale.min) / this.getTimeRange() * this.width;
+        }, this.keyToYCoord = function(a) {
+            return (a / this.keyboardSize - this.keyScale.min) / this.getKeyRange() * this.height;
+        }, this.xCoordToBar = function(a) {
+            return (a / this.width * this.getTimeRange() + this.timeScale.min) * this.clipLength;
+        }, this.yCoordToKey = function(a) {
+            return (1 - (a / this.height * this.getKeyRange() + this.keyScale.min)) * this.keyboardSize;
+        }, this.getHoveredNote = function(a, b) {
+            for (var c = 0; c < this.notes.length; c++) if (a >= this.notes[c].position && a <= this.notes[c].position + this.notes[c].length && this.notes[c].key - b < 1 && this.notes[c].key - b > 0) return this.notes[c];
+            return null;
+        }, this.getHoverAction = function(a, b) {
+            return b ? this.barToPixels(b.length) < 8 ? "mid" : this.barToPixels(a - b.position) < 4 ? "min" : this.barToPixels(b.position + b.length - a) < 4 ? "max" : "mid" : null;
         }, this.init = function() {
             this.canvas.width = this.width = a.clientWidth, this.canvas.height = this.height = a.clientHeight;
         }, this.renderAll = function() {
@@ -24,7 +42,7 @@ var PIANO = function() {
         }, this.renderKeyScale = function() {
             this.canvasContext.lineWidth = 1, this.canvasContext.strokeStyle = "#D4D4E0", this.canvasContext.fillStyle = "#DDDDE4";
             for (var a = this.percentToKey(this.keyScale.min); a <= this.percentToKey(this.keyScale.max); a++) {
-                var b = Math.closestHalfPixel(((a - 1) / this.keyboardSize - this.keyScale.min) / this.getKeyRange() * this.height), c = Math.closestHalfPixel((a / this.keyboardSize - this.keyScale.min) / this.getKeyRange() * this.height);
+                var b = Math.closestHalfPixel(this.keyToYCoord(a - 1)), c = Math.closestHalfPixel(this.keyToYCoord(a));
                 b > .5 && this.canvasContext.drawLine(0, b, this.width, b, this.xyFlip), a % 12 in {
                     3: !0,
                     5: !0,
@@ -38,17 +56,20 @@ var PIANO = function() {
             this.canvasContext.lineWidth = 1;
             for (var a = this.percentToBar(this.timeScale.min) - 1; a < this.percentToBar(this.timeScale.max); a += .25) {
                 this.canvasContext.beginPath(), this.canvasContext.strokeStyle = a % 1 ? "#CCD" : "#AAB";
-                var b = Math.closestHalfPixel((a / this.clipLength - this.timeScale.min) / this.getTimeRange() * this.width);
+                var b = Math.closestHalfPixel(this.barToXCoord(a));
                 this.canvasContext.drawLine(b, 0, b, this.height), this.canvasContext.stroke();
             }
         }, this.renderNotes = function(a) {
             this.canvasContext.beginPath(), this.canvasContext.lineWidth = 1, this.canvasContext.strokeStyle = "#812", 
             this.canvasContext.fillStyle = "#F24";
-            for (var b = 0; b < a.length; b++) {
-                var c = Math.closestHalfPixel((a[b].position / this.clipLength - this.timeScale.min) / this.getTimeRange() * this.width), d = Math.closestHalfPixel(((this.keyboardSize - a[b].key) / this.keyboardSize - this.keyScale.min) / this.getKeyRange() * this.height), e = Math.closestHalfPixel(((a[b].position + a[b].length) / this.clipLength - this.timeScale.min) / this.getTimeRange() * this.width), f = Math.closestHalfPixel(((this.keyboardSize - a[b].key + 1) / this.keyboardSize - this.keyScale.min) / this.getKeyRange() * this.height);
-                this.canvasContext.fillRect(c + 1, d + 2, e - c - 3, f - d - 4), this.canvasContext.strokeRect(c + 0, d + 1, e - c - 1, f - d - 2);
-            }
+            for (var b = 0; b < a.length; b++) this.hoveredNotes.indexOf(a[b]) >= 0 || this.renderSingleNote(a[b]);
+            this.canvasContext.stroke(), this.canvasContext.beginPath(), this.canvasContext.lineWidth = 1, 
+            this.canvasContext.strokeStyle = "#401", this.canvasContext.fillStyle = "#812";
+            for (var c = 0; c < this.hoveredNotes.length; c++) this.renderSingleNote(this.hoveredNotes[c]);
             this.canvasContext.stroke();
+        }, this.renderSingleNote = function(a) {
+            var b = Math.closestHalfPixel(this.barToXCoord(a.position)), c = Math.closestHalfPixel(this.barToXCoord(a.position + a.length)), d = Math.closestHalfPixel(this.keyToYCoord(this.keyboardSize - a.key)), e = Math.closestHalfPixel(this.keyToYCoord(this.keyboardSize - a.key + 1));
+            this.canvasContext.fillRect(b + 1, d + 2, c - b - 3, e - d - 4), this.canvasContext.strokeRect(b + 0, d + 1, c - b - 1, e - d - 2);
         }, this.renderSelectionBox = function(a, b) {
             this.canvasContext.beginPath(), this.canvasContext.lineWidth = 1, this.canvasContext.strokeStyle = "#000", 
             this.canvasContext.setLineDash([ 2, 4 ]), this.canvasContext.strokeRect(Math.closestHalfPixel(a.clientX - this.canvas.clientXYDirectional("x")), Math.closestHalfPixel(a.clientY - this.canvas.clientXYDirectional("y")), Math.round(b.clientX - a.clientX), Math.round(b.clientY - a.clientY)), 
@@ -68,14 +89,41 @@ var PIANO = function() {
             }
             c.renderAll();
         });
-        var d = null;
-        DragKing.addHandler(c.canvas, function(a) {
+        var d = null, e = function(a) {
             c.isDragging = !0, d = a;
-        }, function(a) {
+        }, f = function(a) {
             c.renderAll(), c.renderSelectionBox(d, a);
-        }, function() {
+        }, g = function() {
             c.isDragging = !1, c.renderAll();
-        });
+        };
+        DragKing.addHandler(c.canvas, e, f, g);
+        var h = function() {
+            c.isHovering = !0;
+        }, i = function(a) {
+            var b = c.xCoordToBar(a.clientX - c.canvas.clientXYDirectional("x")), d = c.yCoordToKey(a.clientY - c.canvas.clientXYDirectional("y")), e = c.getHoveredNote(b, d), f = c.getHoverAction(b, e);
+            c.hoveredNotes = e ? [ e ] : [], c.renderAll();
+            var g = null;
+            switch (f) {
+              case "min":
+                g = "xresize";
+                break;
+
+              case "max":
+                g = "xresize";
+                break;
+
+              case "mid":
+                g = "grab";
+                break;
+
+              default:
+                g = "default";
+            }
+            return g;
+        }, j = function() {
+            c.hoveredNotes = [], c.renderAll();
+        };
+        CurseWords.addImplicitCursorHandler(c.canvas, h, i, j);
     }
     var b = [], c = [], d = function(d, e) {
         for (var f = 0; f < b.length; f++) if (b[f] == d) return;

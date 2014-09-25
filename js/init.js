@@ -47,6 +47,7 @@ var PIANO = (function(){
                          , max: 1.000
                          };
     this.notes         = params.notes || [];
+    this.hoveredNotes  = [];
     this.isDragging    = false;
     this.isHovering    = false;
 
@@ -55,10 +56,37 @@ var PIANO = (function(){
     // Methods
     // ------------------------------------------------------------------------
     // Sequencer Coordinates - Helper Methods
-    this.getTimeRange = function(){ return this.timeScale.max - this.timeScale.min; };
-    this.getKeyRange  = function(){ return this.keyScale.max  - this.keyScale.min;  };
-    this.percentToKey = function(percent){ return Math.ceil( percent * this.keyboardSize ); }; // Where percent is between 0.000 and 1.000
-    this.percentToBar = function(percent){ return Math.ceil( percent * this.clipLength   ); }; // Where percent is between 0.000 and 1.000
+    this.getTimeRange    = function(){ return this.timeScale.max - this.timeScale.min; };
+    this.getKeyRange     = function(){ return this.keyScale.max  - this.keyScale.min;  };
+    this.percentToKey    = function(percent){ return Math.ceil( percent * this.keyboardSize ); }; // Where percent is between 0.000 and 1.000
+    this.percentToBar    = function(percent){ return Math.ceil( percent * this.clipLength   ); }; // Where percent is between 0.000 and 1.000
+    this.barToPixels     = function(bar){ return ( ( bar / this.clipLength   )                      ) / this.getTimeRange() * this.width  };
+    this.keyToPixels     = function(key){ return ( ( key / this.keyboardSize )                      ) / this.getKeyRange()  * this.height };
+    this.barToXCoord     = function(bar){ return ( ( bar / this.clipLength   ) - this.timeScale.min ) / this.getTimeRange() * this.width  };
+    this.keyToYCoord     = function(key){ return ( ( key / this.keyboardSize ) - this.keyScale.min  ) / this.getKeyRange()  * this.height };
+    this.xCoordToBar     = function(xCoord){ return (          ( xCoord ) / this.width * this.getTimeRange() + this.timeScale.min  ) * this.clipLength;   };
+    this.yCoordToKey     = function(yCoord){ return (  1.0 - ( ( yCoord ) / this.height * this.getKeyRange() + this.keyScale.min ) ) * this.keyboardSize; };
+    this.getHoveredNote  = function(timePositionBars, key)
+      {
+        for( var i = 0; i < this.notes.length; i++ )
+          if( timePositionBars >= this.notes[i].position
+           && timePositionBars <= this.notes[i].position + this.notes[i].length
+           && this.notes[i].key - key < 1
+           && this.notes[i].key - key > 0
+          )
+            return this.notes[i];
+        return null;
+      };
+    this.getHoverAction  = function(timePositionBars, hoveredNote)
+      { 
+        if( ! hoveredNote )
+          return null;
+
+             if( this.barToPixels( hoveredNote.length ) < 8 )                                           return 'mid';
+        else if( this.barToPixels( timePositionBars - hoveredNote.position ) < 4 )                      return 'min';
+        else if( this.barToPixels( hoveredNote.position + hoveredNote.length - timePositionBars ) < 4 ) return 'max';
+        else                                                                                            return 'mid';
+      };
 
     // Reset the canvas parameters and redraw it!
     this.init = function()
@@ -96,8 +124,8 @@ var PIANO = (function(){
            ;     key++
            )
         {
-          var prevEdge = Math.closestHalfPixel( ( ( (key-1) / this.keyboardSize ) - this.keyScale.min ) / this.getKeyRange() * this.height );
-          var nextEdge = Math.closestHalfPixel( ( (  key    / this.keyboardSize ) - this.keyScale.min ) / this.getKeyRange() * this.height );
+          var prevEdge = Math.closestHalfPixel( this.keyToYCoord( key - 1 ) );
+          var nextEdge = Math.closestHalfPixel( this.keyToYCoord( key     ) );
 
           // Stroke the edge between rows
           if( prevEdge > 0.5 ) // Skip first edge (we have a border to serve that purpose)
@@ -128,7 +156,7 @@ var PIANO = (function(){
           this.canvasContext.beginPath();
           this.canvasContext.strokeStyle = ( bar % 1 ) ? "#CCD" : "#AAB";
 
-          var xPosition = Math.closestHalfPixel( ( ( bar / this.clipLength ) - this.timeScale.min ) / this.getTimeRange() * this.width );
+          var xPosition = Math.closestHalfPixel( this.barToXCoord( bar ) );
           this.canvasContext.drawLine( xPosition, 0, xPosition, this.height );
 
           // Draw each line (different colors)
@@ -136,29 +164,47 @@ var PIANO = (function(){
         }
       };
 
-    // Draw the Notes in
+    // Draw ALL the Notes in
     this.renderNotes = function(notes)
       {
-        // Styles
+        // Regular notes
         this.canvasContext.beginPath();
         this.canvasContext.lineWidth   = 1.0;
         this.canvasContext.strokeStyle = "#812";
         this.canvasContext.fillStyle   = "#F24";
-
         for( var i = 0; i < notes.length; i++ )
         {
-          var x1 = Math.closestHalfPixel( ( (   notes[i].position                  / this.clipLength   ) - this.timeScale.min ) / this.getTimeRange() * this.width  );
-          var y1 = Math.closestHalfPixel( ( ( ( this.keyboardSize - notes[i].key ) / this.keyboardSize ) - this.keyScale.min  ) / this.getKeyRange()  * this.height );
-          var x2 = Math.closestHalfPixel( ( ( ( notes[i].position + notes[i].length   ) / this.clipLength   ) - this.timeScale.min ) / this.getTimeRange() * this.width  );
-          var y2 = Math.closestHalfPixel( ( ( ( this.keyboardSize - notes[i].key  + 1 ) / this.keyboardSize ) - this.keyScale.min  ) / this.getKeyRange()  * this.height );
-          this.canvasContext.fillRect  ( x1 + 1, y1 + 2, x2 - x1 - 3, y2 - y1 - 4 );
-          this.canvasContext.strokeRect( x1 + 0, y1 + 1, x2 - x1 - 1, y2 - y1 - 2 );
-        }
+          // Skip hovered notes
+          if( this.hoveredNotes.indexOf( notes[i] ) >= 0 )
+            continue;
 
-        // Stroke it all at the end!
+          // Draw all other notes
+          this.renderSingleNote( notes[i] );
+        }
+        this.canvasContext.stroke();
+
+        // Draw the hovered notes
+        this.canvasContext.beginPath();
+        this.canvasContext.lineWidth   = 1.0;
+        this.canvasContext.strokeStyle = "#401";
+        this.canvasContext.fillStyle   = "#812";
+        for( var j = 0; j < this.hoveredNotes.length; j++ )
+          this.renderSingleNote( this.hoveredNotes[j] );
         this.canvasContext.stroke();
       };
 
+    // Render a single note, using the closestHalfPixel helper to avoid aliasing
+    this.renderSingleNote = function(note)
+      {
+        var x1 = Math.closestHalfPixel( this.barToXCoord( note.position ) );
+        var x2 = Math.closestHalfPixel( this.barToXCoord( note.position + note.length ) );
+        var y1 = Math.closestHalfPixel( this.keyToYCoord( this.keyboardSize - note.key ) );
+        var y2 = Math.closestHalfPixel( this.keyToYCoord( this.keyboardSize - note.key  + 1 ) );
+        this.canvasContext.fillRect  ( x1 + 1, y1 + 2, x2 - x1 - 3, y2 - y1 - 4 );
+        this.canvasContext.strokeRect( x1 + 0, y1 + 1, x2 - x1 - 1, y2 - y1 - 2 );
+      };
+
+    // The selection box that appears when you click drag with the mouse
     this.renderSelectionBox = function(startEvent, endEvent)
       {
         this.canvasContext.beginPath();
@@ -201,33 +247,56 @@ var PIANO = (function(){
     // Drag and Drop of grips
     // ------------------------------------------------------------------------
     var startEvent = null;
-    DragKing.addHandler(
-      // targetElement
-      that.canvas,
-      // gripHandler
-      function(e)
-      {
-        that.isDragging = true;
-        startEvent = e;
-      },
-      // dragHandler
-      function(e)
-      {
-        that.renderAll();
-        that.renderSelectionBox(startEvent, e);
-      },
-      // dropHandler
-      function(e)
-      {
-        that.isDragging = false;
-        that.renderAll();
-      }
-    );
+    var gripHandler = function (e)
+    {
+      that.isDragging = true;
+      startEvent = e;
+    };
+    var dragHandler = function (e)
+    {
+      that.renderAll();
+      that.renderSelectionBox(startEvent, e);
+    };
+    var dropHandler = function (e)
+    {
+      that.isDragging = false;
+      that.renderAll();
+    };
+    DragKing.addHandler( that.canvas, gripHandler, dragHandler, dropHandler );
 
     // ------------------------------------------------------------------------
     // Hovering / Cursor management
     // ------------------------------------------------------------------------
-    // ...
+    var enterHandler = function (e) { that.isHovering = true; };
+    var hoverHandler = function (e)
+    {
+      // Figure out which note is hovered over (if any)?
+      var timePostion = that.xCoordToBar( e.clientX - that.canvas.clientXYDirectional('x') );
+      var keyPosition = that.yCoordToKey( e.clientY - that.canvas.clientXYDirectional('y') );
+      var hoveredNote = that.getHoveredNote(timePostion, keyPosition)
+      var hoverAction = that.getHoverAction(timePostion, hoveredNote);
+      that.hoveredNotes = hoveredNote ? [hoveredNote] : [];
+
+      // Repaint with the hover state
+      that.renderAll();
+
+      // Set the cursor
+      var newCursor = null;
+      switch( hoverAction )
+      {
+        case 'min': newCursor = 'xresize'; break;
+        case 'max': newCursor = 'xresize'; break;
+        case 'mid': newCursor = 'grab'; break;
+           default: newCursor = 'default';
+      }
+      return newCursor;
+    };
+    var exitHandler = function (e)
+    {
+      that.hoveredNotes = [];
+      that.renderAll();
+    };
+    CurseWords.addImplicitCursorHandler( that.canvas, enterHandler, hoverHandler, exitHandler );
   }
   //
   // End of PianoRoll definition

@@ -1,54 +1,29 @@
 var PIANO = function() {
-    function a(a) {
+    function a(a, b) {
         this.canvas = a.appendChild(document.createElement("canvas")), this.canvas.className = "piano-canvas", 
-        this.canvasContext = this.canvas.getContext("2d"), this.keyboardRange = 25, this.clipLength = 4, 
+        this.canvasContext = this.canvas.getContext("2d"), this.keyboardSize = 88, this.clipLength = 64, 
         this.width = null, this.height = null, this.timeScale = {
             min: 0,
             max: 1
         }, this.keyScale = {
             min: .5,
             max: 1
-        }, this.getTimeRange = function() {
+        }, this.notes = b.notes || [], this.getTimeRange = function() {
             return this.timeScale.max - this.timeScale.min;
         }, this.getKeyRange = function() {
             return this.keyScale.max - this.keyScale.min;
         }, this.percentToKey = function(a) {
-            return Math.ceil(a * this.keyboardRange);
+            return Math.ceil(a * this.keyboardSize);
         }, this.percentToBar = function(a) {
             return Math.ceil(a * this.clipLength);
         }, this.init = function() {
-            this.canvas.width = this.width = a.clientWidth, this.canvas.height = this.height = a.clientHeight;
-            var b = [ {
-                key: 10,
-                position: 0,
-                length: .5
-            }, {
-                key: 14,
-                position: .25,
-                length: 1
-            }, {
-                key: 17,
-                position: .5,
-                length: .75
-            }, {
-                key: 22,
-                position: .75,
-                length: .5
-            }, {
-                key: 24,
-                position: 1,
-                length: .25
-            }, {
-                key: 22,
-                position: 1.25,
-                length: .25
-            } ];
+            this.canvas.width = this.width = a.clientWidth, this.canvas.height = this.height = a.clientHeight, 
             this.canvasContext.clear(), this.canvasContext.backgroundFill("#EEEEEE"), this.renderKeyScale(), 
-            this.renderTimeScale(), this.renderNotes(b);
+            this.renderTimeScale(), this.renderNotes(this.notes);
         }, this.renderKeyScale = function() {
             this.canvasContext.lineWidth = 1, this.canvasContext.strokeStyle = "#D4D4E0", this.canvasContext.fillStyle = "#DDDDE4";
             for (var a = this.percentToKey(this.keyScale.min); a <= this.percentToKey(this.keyScale.max); a++) {
-                var b = Math.closestHalfPixel(((a - 1) / this.keyboardRange - this.keyScale.min) / this.getKeyRange() * this.height), c = Math.closestHalfPixel((a / this.keyboardRange - this.keyScale.min) / this.getKeyRange() * this.height);
+                var b = Math.closestHalfPixel(((a - 1) / this.keyboardSize - this.keyScale.min) / this.getKeyRange() * this.height), c = Math.closestHalfPixel((a / this.keyboardSize - this.keyScale.min) / this.getKeyRange() * this.height);
                 b > .5 && this.canvasContext.drawLine(0, b, this.width, b, this.xyFlip), a % 12 in {
                     3: !0,
                     5: !0,
@@ -60,30 +35,31 @@ var PIANO = function() {
             this.canvasContext.stroke();
         }, this.renderTimeScale = function() {
             this.canvasContext.lineWidth = 1;
-            for (var a = this.percentToBar(this.timeScale.min) - 1; a <= this.percentToBar(this.timeScale.max); a += .25) {
+            for (var a = this.percentToBar(this.timeScale.min) - 1; a < this.percentToBar(this.timeScale.max); a += .25) {
                 this.canvasContext.beginPath(), this.canvasContext.strokeStyle = a % 1 ? "#CCD" : "#AAB";
                 var b = Math.closestHalfPixel((a / this.clipLength - this.timeScale.min) / this.getTimeRange() * this.width);
                 this.canvasContext.drawLine(b, 0, b, this.height), this.canvasContext.stroke();
             }
         }, this.renderNotes = function(a) {
-            this.canvasContext.lineWidth = 1, this.canvasContext.strokeStyle = "#812", this.canvasContext.fillStyle = "#F24";
+            this.canvasContext.beginPath(), this.canvasContext.lineWidth = 1, this.canvasContext.strokeStyle = "#812", 
+            this.canvasContext.fillStyle = "#F24";
             for (var b = 0; b < a.length; b++) {
-                var c = Math.closestHalfPixel((a[b].position / this.clipLength - this.timeScale.min) / this.getTimeRange() * this.width), d = Math.closestHalfPixel((a[b].key / this.keyboardRange - this.keyScale.min) / this.getKeyRange() * this.height), e = Math.closestHalfPixel(((a[b].position + a[b].length) / this.clipLength - this.timeScale.min) / this.getTimeRange() * this.width), f = Math.closestHalfPixel(((a[b].key + 1) / this.keyboardRange - this.keyScale.min) / this.getKeyRange() * this.height);
+                var c = Math.closestHalfPixel((a[b].position / this.clipLength - this.timeScale.min) / this.getTimeRange() * this.width), d = Math.closestHalfPixel(((this.keyboardSize - a[b].key) / this.keyboardSize - this.keyScale.min) / this.getKeyRange() * this.height), e = Math.closestHalfPixel(((a[b].position + a[b].length) / this.clipLength - this.timeScale.min) / this.getTimeRange() * this.width), f = Math.closestHalfPixel(((this.keyboardSize - a[b].key + 1) / this.keyboardSize - this.keyScale.min) / this.getKeyRange() * this.height);
                 this.canvasContext.fillRect(c + 1, d + 2, e - c - 3, f - d - 4), this.canvasContext.strokeRect(c + 0, d + 1, e - c - 1, f - d - 2);
             }
             this.canvasContext.stroke();
         };
-        var b = this;
-        b.init(), b.init(), a.addEventListener("gripscroll-update", function(a) {
+        var c = this;
+        c.init(), c.init(), a.addEventListener("gripscroll-update", function(a) {
             switch (a.direction) {
               case "x":
-                b.timeScale.min = a.min, b.timeScale.max = a.max;
+                c.timeScale.min = a.min, c.timeScale.max = a.max;
                 break;
 
               case "y":
-                b.keyScale.min = a.min, b.keyScale.max = a.max;
+                c.keyScale.min = a.min, c.keyScale.max = a.max;
             }
-            b.init();
+            c.init();
         });
     }
     var b = [], c = [], d = function(d, e) {

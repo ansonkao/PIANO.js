@@ -655,11 +655,12 @@
                          , { key: 82, position: 51.75, length: 0.25 }
                          ];
 
+    var scrollParams = { x1: 0.075, x2: 0.200, y1: 0.400, y2: 0.700 };
 
     var target = document.getElementById('target');
 
-         PIANO.add( target, pianoParams );
-    GripScroll.add( target );
+         PIANO.add( target, pianoParams  );
+    GripScroll.add( target, scrollParams );
   </script>
 
 </body>

@@ -16,11 +16,7 @@ var PIANO = (function(){
 
       // Okay let's add it
       containerStack.push( container );
-      pianoRollStack.push(
-          { x: new PianoRoll( container, params )
-          , y: new PianoRoll( container, params )
-          }
-        );
+      pianoRollStack.push( new PianoRoll( container, params ) );
     };
 
   // ==========================================================================
@@ -44,10 +40,10 @@ var PIANO = (function(){
     this.clipLength    = 64;    // ...in bars. 2.125 means 2 bars and 1/8th note long
     this.width         = null;
     this.height        = null;
-    this.timeScale     = { min: 0.000
+    this.timeScale     = { min: 0.500
                          , max: 1.000
                          };
-    this.keyScale      = { min: 0.500
+    this.keyScale      = { min: 0.000
                          , max: 1.000
                          };
     this.notes         = params.notes || [];
@@ -163,7 +159,6 @@ var PIANO = (function(){
     // Initialize!
     var that = this;
         that.init();
-    that.init();
     container.addEventListener('gripscroll-update', function (e){
       switch( e.direction )
       {

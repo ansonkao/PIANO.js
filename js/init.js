@@ -47,6 +47,8 @@ var PIANO = (function(){
                          , max: 1.000
                          };
     this.notes         = params.notes || [];
+    this.isDragging    = false;
+    this.isHovering    = false;
 
 
     // ------------------------------------------------------------------------
@@ -68,7 +70,11 @@ var PIANO = (function(){
            * wrapper. If we use getBoundingClientRect() instead, we'll get non-integer
            * values and the discrepancy will lead to sub-pixel blending and fuzzy lines.
            */ 
-
+      };
+    
+    // Render the entire canvas
+    this.renderAll = function()
+      {
         this.canvasContext.clear();
         this.canvasContext.backgroundFill('#EEEEEE');
         this.renderKeyScale();
@@ -153,20 +159,70 @@ var PIANO = (function(){
         this.canvasContext.stroke();
       };
 
+    this.renderSelectionBox = function(startEvent, endEvent)
+      {
+        this.canvasContext.beginPath();
+        this.canvasContext.lineWidth   = 1.0;
+        this.canvasContext.strokeStyle = "#000";
+        this.canvasContext.setLineDash([2,4]);
+        this.canvasContext.strokeRect
+          ( Math.closestHalfPixel( startEvent.clientX - this.canvas.clientXYDirectional('x') )
+          , Math.closestHalfPixel( startEvent.clientY - this.canvas.clientXYDirectional('y') )
+          , Math.round( endEvent.clientX - startEvent.clientX )
+          , Math.round( endEvent.clientY - startEvent.clientY )
+          );
+        this.canvasContext.stroke();
+        this.canvasContext.setLineDash([]);
+      };
+
     // ------------------------------------------------------------------------
     // Construction of each PianoRoll instance
     // ------------------------------------------------------------------------
     // Initialize!
     var that = this;
         that.init();
+
+    // Reinitialize dimensions up on resize
+    window.addEventListener('resize', function (e){
+      that.init();
+    });
+
+    // Redraw upon scroll
     container.addEventListener('gripscroll-update', function (e){
       switch( e.direction )
       {
         case 'x': that.timeScale.min = e.min; that.timeScale.max = e.max; break;
         case 'y': that.keyScale.min  = e.min; that.keyScale.max  = e.max; break;
       }
-      that.init();
+      that.renderAll();
     });
+
+    // ------------------------------------------------------------------------
+    // Drag and Drop of grips
+    // ------------------------------------------------------------------------
+    var startEvent = null;
+    DragKing.addHandler(
+      // targetElement
+      that.canvas,
+      // gripHandler
+      function(e)
+      {
+        that.isDragging = true;
+        startEvent = e;
+      },
+      // dragHandler
+      function(e)
+      {
+        that.renderAll();
+        that.renderSelectionBox(startEvent, e);
+      },
+      // dropHandler
+      function(e)
+      {
+        that.isDragging = false;
+        that.renderAll();
+      }
+    );
 
     // ------------------------------------------------------------------------
     // Hovering / Cursor management

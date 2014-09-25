@@ -8,7 +8,7 @@ var PIANO = function() {
         }, this.keyScale = {
             min: 0,
             max: 1
-        }, this.notes = b.notes || [], this.getTimeRange = function() {
+        }, this.notes = b.notes || [], this.isDragging = !1, this.isHovering = !1, this.getTimeRange = function() {
             return this.timeScale.max - this.timeScale.min;
         }, this.getKeyRange = function() {
             return this.keyScale.max - this.keyScale.min;
@@ -17,7 +17,8 @@ var PIANO = function() {
         }, this.percentToBar = function(a) {
             return Math.ceil(a * this.clipLength);
         }, this.init = function() {
-            this.canvas.width = this.width = a.clientWidth, this.canvas.height = this.height = a.clientHeight, 
+            this.canvas.width = this.width = a.clientWidth, this.canvas.height = this.height = a.clientHeight;
+        }, this.renderAll = function() {
             this.canvasContext.clear(), this.canvasContext.backgroundFill("#EEEEEE"), this.renderKeyScale(), 
             this.renderTimeScale(), this.renderNotes(this.notes);
         }, this.renderKeyScale = function() {
@@ -48,9 +49,15 @@ var PIANO = function() {
                 this.canvasContext.fillRect(c + 1, d + 2, e - c - 3, f - d - 4), this.canvasContext.strokeRect(c + 0, d + 1, e - c - 1, f - d - 2);
             }
             this.canvasContext.stroke();
+        }, this.renderSelectionBox = function(a, b) {
+            this.canvasContext.beginPath(), this.canvasContext.lineWidth = 1, this.canvasContext.strokeStyle = "#000", 
+            this.canvasContext.setLineDash([ 2, 4 ]), this.canvasContext.strokeRect(Math.closestHalfPixel(a.clientX - this.canvas.clientXYDirectional("x")), Math.closestHalfPixel(a.clientY - this.canvas.clientXYDirectional("y")), Math.round(b.clientX - a.clientX), Math.round(b.clientY - a.clientY)), 
+            this.canvasContext.stroke(), this.canvasContext.setLineDash([]);
         };
         var c = this;
-        c.init(), a.addEventListener("gripscroll-update", function(a) {
+        c.init(), window.addEventListener("resize", function() {
+            c.init();
+        }), a.addEventListener("gripscroll-update", function(a) {
             switch (a.direction) {
               case "x":
                 c.timeScale.min = a.min, c.timeScale.max = a.max;
@@ -59,7 +66,15 @@ var PIANO = function() {
               case "y":
                 c.keyScale.min = a.min, c.keyScale.max = a.max;
             }
-            c.init();
+            c.renderAll();
+        });
+        var d = null;
+        DragKing.addHandler(c.canvas, function(a) {
+            c.isDragging = !0, d = a;
+        }, function(a) {
+            c.renderAll(), c.renderSelectionBox(d, a);
+        }, function() {
+            c.isDragging = !1, c.renderAll();
         });
     }
     var b = [], c = [], d = function(d, e) {

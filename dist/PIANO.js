@@ -88,7 +88,7 @@ var PIANO = function() {
         for (var c = 0; c < this.notes.length; c++) if (a >= this.notes[c].position && a <= this.notes[c].position + this.notes[c].length && this.notes[c].key - b < 1 && this.notes[c].key - b > 0) return this.notes[c];
         return null;
     }, a.prototype.getHoverAction = function(a, b) {
-        return b ? this.barToPixels(b.length) < 8 ? "mid" : this.barToPixels(a - b.position) < 4 ? "min" : this.barToPixels(b.position + b.length - a) < 4 ? "max" : "mid" : null;
+        return b ? this.barToPixels(b.length) < 15 ? "mid" : this.barToPixels(a - b.position) < 4 ? "min" : this.barToPixels(b.position + b.length - a) < 4 ? "max" : "mid" : null;
     }, a.prototype.init = function() {
         this.canvas.width = this.width = this.container.clientWidth, this.canvas.height = this.height = this.container.clientHeight;
     }, a.prototype.renderAll = function() {

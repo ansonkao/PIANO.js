@@ -163,7 +163,7 @@ var PIANO = (function(){
       if( ! hoveredNote )
         return null;
 
-           if( this.barToPixels( hoveredNote.length ) < 8 )                                           return 'mid';
+           if( this.barToPixels( hoveredNote.length ) < 15 )                                          return 'mid';
       else if( this.barToPixels( timePositionBars - hoveredNote.position ) < 4 )                      return 'min';
       else if( this.barToPixels( hoveredNote.position + hoveredNote.length - timePositionBars ) < 4 ) return 'max';
       else                                                                                            return 'mid';

@@ -47,8 +47,10 @@ var PIANO = (function(){
     this.keyScale      = { min: 0.000
                          , max: 1.000
                          };
-    this.notes         = params.notes || [];
-    this.hoveredNotes  = [];
+    this.notes = {};
+    this.notes.saved   = params.notes || [];
+    this.notes.active  = [];
+
     this.isDragging    = false;
     this.isHovering    = false;
 
@@ -78,19 +80,43 @@ var PIANO = (function(){
     // Drag and Drop of grips
     // ------------------------------------------------------------------------
     var startEvent = null;
+    var dragAction = null;
+    var dragNote   = null;
     var gripHandler = function (e)
       {
         that.isDragging = true;
         startEvent = e;
+
+        // Figure out which note (if any) is being gripped?
+        var timePostion = that.xCoordToBar( e.clientX - that.canvas.clientXYDirectional('x') );
+        var keyPosition = that.yCoordToKey( e.clientY - that.canvas.clientXYDirectional('y') );
+        dragNote   = that.getHoveredNote(timePostion, keyPosition)
+        dragAction = that.getHoverAction(timePostion, dragNote);
+
+        that.notes.active = dragNote ? [dragNote] : [];
       };
     var dragHandler = function (e)
       {
-        that.renderAll();
-        that.renderSelectionBox(startEvent, e);
+        switch( dragAction )
+        {
+          case 'min':
+          case 'max':
+            break;
+          case 'mid':
+            that.renderAll({ timeDelta: that.pixelsToBar( e.clientX - startEvent.clientX )
+                           , keyDelta:  that.pixelsToKey( e.clientY - startEvent.clientY )
+                           });
+            break;
+          default: 
+            that.renderAll();
+            that.renderSelectionBox(startEvent, e);
+            break;
+        }
       };
     var dropHandler = function (e)
       {
         that.isDragging = false;
+        that.notes.active = [];
         that.renderAll();
       };
     DragKing.addHandler( that.canvas, gripHandler, dragHandler, dropHandler );
@@ -100,16 +126,20 @@ var PIANO = (function(){
     // ------------------------------------------------------------------------
     var enterHandler = function (e)
       {
+        // This line below is useless at the moment... TODO
         that.isHovering = true;
       };
     var hoverHandler = function (e)
       {
+        if( that.isDragging )
+          return null;
+
         // Figure out which note is hovered over (if any)?
-        var timePostion = that.xCoordToBar( e.clientX - that.canvas.clientXYDirectional('x') );
-        var keyPosition = that.yCoordToKey( e.clientY - that.canvas.clientXYDirectional('y') );
-        var hoveredNote = that.getHoveredNote(timePostion, keyPosition)
-        var hoverAction = that.getHoverAction(timePostion, hoveredNote);
-        that.hoveredNotes = hoveredNote ? [hoveredNote] : [];
+        var timePosition = that.xCoordToBar( e.clientX - that.canvas.clientXYDirectional('x') );
+        var  keyPosition = that.yCoordToKey( e.clientY - that.canvas.clientXYDirectional('y') );
+        var  hoveredNote = that.getHoveredNote(timePosition, keyPosition)
+        var  hoverAction = that.getHoverAction(timePosition, hoveredNote);
+        that.notes.active = hoveredNote ? [hoveredNote] : [];
 
         // Repaint with the hover state
         that.renderAll();
@@ -127,7 +157,7 @@ var PIANO = (function(){
       };
     var exitHandler = function (e)
       {
-        that.hoveredNotes = [];
+        that.notes.active = [];
         that.renderAll();
       };
     CurseWords.addImplicitCursorHandler( that.canvas, enterHandler, hoverHandler, exitHandler );
@@ -145,17 +175,19 @@ var PIANO = (function(){
   PianoRoll.prototype.keyToPixels     = function(key){ return ( ( key / this.keyboardSize )                      ) / this.getKeyRange()  * this.height };
   PianoRoll.prototype.barToXCoord     = function(bar){ return ( ( bar / this.clipLength   ) - this.timeScale.min ) / this.getTimeRange() * this.width  };
   PianoRoll.prototype.keyToYCoord     = function(key){ return ( ( key / this.keyboardSize ) - this.keyScale.min  ) / this.getKeyRange()  * this.height };
+  PianoRoll.prototype.pixelsToBar     = function(pixels){ return (          ( pixels ) / this.width * this.getTimeRange()                       ) * this.clipLength;   };
+  PianoRoll.prototype.pixelsToKey     = function(pixels){ return (  0.0 - ( ( pixels ) / this.height * this.getKeyRange()                     ) ) * this.keyboardSize; };
   PianoRoll.prototype.xCoordToBar     = function(xCoord){ return (          ( xCoord ) / this.width * this.getTimeRange() + this.timeScale.min  ) * this.clipLength;   };
   PianoRoll.prototype.yCoordToKey     = function(yCoord){ return (  1.0 - ( ( yCoord ) / this.height * this.getKeyRange() + this.keyScale.min ) ) * this.keyboardSize; };
   PianoRoll.prototype.getHoveredNote  = function(timePositionBars, key)
     {
-      for( var i = 0; i < this.notes.length; i++ )
-        if( timePositionBars >= this.notes[i].position
-         && timePositionBars <= this.notes[i].position + this.notes[i].length
-         && this.notes[i].key - key < 1
-         && this.notes[i].key - key > 0
+      for( var i = 0; i < this.notes.saved.length; i++ )
+        if( timePositionBars >= this.notes.saved[i].position
+         && timePositionBars <= this.notes.saved[i].position + this.notes.saved[i].length
+         && this.notes.saved[i].key - key < 1
+         && this.notes.saved[i].key - key > 0
         )
-          return this.notes[i];
+          return this.notes.saved[i];
       return null;
     };
   PianoRoll.prototype.getHoverAction  = function(timePositionBars, hoveredNote)
@@ -182,13 +214,13 @@ var PIANO = (function(){
     };
   
   // Render the entire canvas
-  PianoRoll.prototype.renderAll = function()
+  PianoRoll.prototype.renderAll = function(params)
     {
       this.canvasContext.clear();
       this.canvasContext.backgroundFill('#EEEEEE');
       this.renderKeyScale();
       this.renderTimeScale();
-      this.renderNotes( this.notes );
+      this.renderNotes(params);
     };
   
   // Render the staff (black and white rows)
@@ -246,21 +278,21 @@ var PIANO = (function(){
     };
 
   // Draw ALL the Notes in
-  PianoRoll.prototype.renderNotes = function(notes)
+  PianoRoll.prototype.renderNotes = function(params)
     {
       // Regular notes
       this.canvasContext.beginPath();
       this.canvasContext.lineWidth   = 1.0;
       this.canvasContext.strokeStyle = "#812";
       this.canvasContext.fillStyle   = "#F24";
-      for( var i = 0; i < notes.length; i++ )
+      for( var i = 0; i < this.notes.saved.length; i++ )
       {
         // Skip hovered notes
-        if( this.hoveredNotes.indexOf( notes[i] ) >= 0 )
+        if( this.notes.active.indexOf( this.notes.saved[i] ) >= 0 )
           continue;
 
         // Draw all other notes
-        this.renderSingleNote( notes[i] );
+        this.renderSingleNote( this.notes.saved[i] );
       }
       this.canvasContext.stroke();
 
@@ -269,8 +301,15 @@ var PIANO = (function(){
       this.canvasContext.lineWidth   = 1.0;
       this.canvasContext.strokeStyle = "#401";
       this.canvasContext.fillStyle   = "#812";
-      for( var j = 0; j < this.hoveredNotes.length; j++ )
-        this.renderSingleNote( this.hoveredNotes[j] );
+      for( var j = 0; j < this.notes.active.length; j++ )
+      {
+        var timeDelta = Math.round( ( params && params.timeDelta || 0.0 ) * 8 ) * 0.125;
+        var  keyDelta = Math.round(   params && params.keyDelta  || 0.0       );
+        this.renderSingleNote({ key:      this.notes.active[j].key      + keyDelta
+                              , position: this.notes.active[j].position + timeDelta
+                              , length:   this.notes.active[j].length
+                              });
+      }
       this.canvasContext.stroke();
     };
 

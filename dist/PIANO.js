@@ -30,15 +30,42 @@ var PIANO = function() {
             var b = c.xCoordToBar(a.clientX - c.canvas.clientXYDirectional("x")), e = c.yCoordToKey(a.clientY - c.canvas.clientXYDirectional("y")), f = c.getHoveredNote(b, e);
             c.isDragging = c.getHoverAction(b, f), c.setActiveNotes(f);
         }, f = function(a) {
-            "mid" == c.isDragging ? (c.renderFreshGrid(), c.renderNotes({
-                startDelta: c.pixelsToBar(a.clientX - d.clientX),
-                keyDelta: c.pixelsToKey(a.clientY - d.clientY)
-            })) : (c.renderFreshGrid(), c.renderNotes(), c.renderSelectionBox(d, a));
+            c.renderFreshGrid();
+            var b = {}, e = !1;
+            switch (c.isDragging) {
+              case "mid":
+                b.keyDelta = c.pixelsToKey(a.clientY - d.clientY), b.startDelta = c.pixelsToBar(a.clientX - d.clientX), 
+                b.endDelta = b.startDelta;
+                break;
+
+              case "min":
+                b.startDelta = c.pixelsToBar(a.clientX - d.clientX);
+                break;
+
+              case "max":
+                b.endDelta = c.pixelsToBar(a.clientX - d.clientX);
+                break;
+
+              default:
+                e = !0;
+            }
+            c.renderNotes(b), e && c.renderSelectionBox(d, a);
         }, g = function(a) {
-            "mid" == c.isDragging && c.applyChangesToActiveNotes({
-                startDelta: c.pixelsToBar(a.clientX - d.clientX),
-                keyDelta: c.pixelsToKey(a.clientY - d.clientY)
-            }), c.isDragging = !1, c.renderFreshGrid(), c.renderNotes();
+            var b = {};
+            switch (c.isDragging) {
+              case "mid":
+                b.keyDelta = c.pixelsToKey(a.clientY - d.clientY), b.startDelta = c.pixelsToBar(a.clientX - d.clientX), 
+                b.endDelta = b.startDelta;
+                break;
+
+              case "min":
+                b.startDelta = c.pixelsToBar(a.clientX - d.clientX);
+                break;
+
+              case "max":
+                b.endDelta = c.pixelsToBar(a.clientX - d.clientX);
+            }
+            c.isDragging = !1, c.applyChangesToActiveNotes(b), c.renderFreshGrid(), c.renderNotes();
         };
         DragKing.addHandler(c.canvas, e, f, g);
         var h = function() {
@@ -110,9 +137,9 @@ var PIANO = function() {
     }, a.prototype.clearActiveNotes = function() {
         this.notes.saved = this.notes.saved.concat(this.notes.active), this.notes.active = [];
     }, a.prototype.applyChangesToActiveNotes = function(a) {
-        if (a) for (var b = 0; b < this.notes.active.length; b++) a.startDelta && (this.notes.active[b].start += a.startDelta, 
-        this.notes.active[b].end += a.startDelta), a.keyDelta && (this.notes.active[b].key += a.keyDelta), 
-        a.lengthDelta && (this.notes.active[b].end += a.lengthDelta), this.quantizeNote(this.notes.active[b]);
+        if (a) for (var b = 0; b < this.notes.active.length; b++) a.startDelta && (this.notes.active[b].start += a.startDelta), 
+        a.keyDelta && (this.notes.active[b].key += a.keyDelta), a.endDelta && (this.notes.active[b].end += a.endDelta), 
+        this.quantizeNote(this.notes.active[b]);
     }, a.prototype.quantizeNote = function(a) {
         return a.key = Math.round(a.key), a.start = .125 * Math.round(8 * a.start), a.end = .125 * Math.round(8 * a.end), 
         a;
@@ -148,12 +175,11 @@ var PIANO = function() {
         this.canvasContext.stroke(), this.canvasContext.beginPath(), this.canvasContext.lineWidth = 1, 
         this.canvasContext.strokeStyle = "#401", this.canvasContext.fillStyle = "#812";
         for (var c = 0; c < this.notes.active.length; c++) {
-            var d = a && a.startDelta || 0, e = a && a.keyDelta || 0, f = this.quantizeNote({
-                key: this.notes.active[c].key + e,
-                start: this.notes.active[c].start + d,
-                end: this.notes.active[c].end + d
-            });
-            this.renderSingleNote(f);
+            var d = {};
+            d.start = a && a.startDelta ? this.notes.active[c].start + a.startDelta : this.notes.active[c].start, 
+            d.key = a && a.keyDelta ? this.notes.active[c].key + a.keyDelta : this.notes.active[c].key, 
+            d.end = a && a.endDelta ? this.notes.active[c].end + a.endDelta : this.notes.active[c].end, 
+            this.quantizeNote(d), this.renderSingleNote(d);
         }
         this.canvasContext.stroke();
     }, a.prototype.renderSingleNote = function(a) {

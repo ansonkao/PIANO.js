@@ -94,30 +94,57 @@ var PIANO = (function(){
       };
     var dragHandler = function (e)
       {
-        if( that.isDragging == 'mid' )
+        that.renderFreshGrid();
+
+        // Decide how to draw notes based on what action is currently occurring
+        var noteChanges = {};
+        var showSelectionBox = false;
+        switch( that.isDragging )
         {
-          that.renderFreshGrid();
-          that.renderNotes({ startDelta: that.pixelsToBar( e.clientX - startEvent.clientX )
-                           , keyDelta:   that.pixelsToKey( e.clientY - startEvent.clientY )
-                           });
+          case 'mid':
+            noteChanges.keyDelta   = that.pixelsToKey( e.clientY - startEvent.clientY );
+            noteChanges.startDelta = that.pixelsToBar( e.clientX - startEvent.clientX );
+            noteChanges.endDelta   = noteChanges.startDelta
+            break;
+          case 'min':
+            noteChanges.startDelta = that.pixelsToBar( e.clientX - startEvent.clientX );
+            break;
+          case 'max':
+            noteChanges.endDelta   = that.pixelsToBar( e.clientX - startEvent.clientX );
+            break;
+          default:
+            showSelectionBox = true; 
         }
-        else
-        {
-          that.renderFreshGrid();
-          that.renderNotes();
+
+        // Draw the notes accordingly
+        that.renderNotes(noteChanges);
+        if( showSelectionBox )
           that.renderSelectionBox(startEvent, e);
-        }
       };
     var dropHandler = function (e)
       {
-        if( that.isDragging == 'mid' )
+        // Determine the final changes to the notes
+        var noteChanges = {};
+        switch( that.isDragging )
         {
-          that.applyChangesToActiveNotes({ startDelta: that.pixelsToBar( e.clientX - startEvent.clientX )
-                                         , keyDelta:   that.pixelsToKey( e.clientY - startEvent.clientY )
-                                         });
+          case 'mid':
+            noteChanges.keyDelta   = that.pixelsToKey( e.clientY - startEvent.clientY );
+            noteChanges.startDelta = that.pixelsToBar( e.clientX - startEvent.clientX );
+            noteChanges.endDelta   = noteChanges.startDelta
+            break;
+          case 'min':
+            noteChanges.startDelta = that.pixelsToBar( e.clientX - startEvent.clientX );
+            break;
+          case 'max':
+            noteChanges.endDelta   = that.pixelsToBar( e.clientX - startEvent.clientX );
+            break;
+          default:
+            // Do nothing...
         }
 
+        // Update the state
         that.isDragging = false;
+        that.applyChangesToActiveNotes(noteChanges);
         that.renderFreshGrid();
         that.renderNotes();
       };
@@ -241,13 +268,9 @@ var PIANO = (function(){
 
       for( var i = 0; i < this.notes.active.length; i++ )
       {
-        if( params.startDelta )
-        {
-          this.notes.active[i].start += params.startDelta;
-          this.notes.active[i].end   += params.startDelta;
-        }
-        if( params.keyDelta    ) this.notes.active[i].key += params.keyDelta;
-        if( params.lengthDelta ) this.notes.active[i].end += params.lengthDelta;
+        if( params.startDelta ) this.notes.active[i].start += params.startDelta;
+        if( params.keyDelta   ) this.notes.active[i].key   += params.keyDelta;
+        if( params.endDelta   ) this.notes.active[i].end   += params.endDelta;
 
         this.quantizeNote( this.notes.active[i] );
       }
@@ -358,12 +381,11 @@ var PIANO = (function(){
       this.canvasContext.fillStyle   = "#812";
       for( var j = 0; j < this.notes.active.length; j++ )
       {
-        var startDelta = params && params.startDelta || 0.0;
-        var   keyDelta = params && params.keyDelta   || 0.0;
-        var previewNote = this.quantizeNote({ key:   this.notes.active[j].key    + keyDelta
-                                            , start: this.notes.active[j].start  + startDelta
-                                            , end:   this.notes.active[j].end    + startDelta
-                                            });
+        var previewNote = {};
+            previewNote.start = params && params.startDelta ? this.notes.active[j].start + params.startDelta : this.notes.active[j].start;
+            previewNote.key   = params && params.keyDelta   ? this.notes.active[j].key   + params.keyDelta   : this.notes.active[j].key;
+            previewNote.end   = params && params.endDelta   ? this.notes.active[j].end   + params.endDelta   : this.notes.active[j].end;
+        this.quantizeNote(previewNote);
         this.renderSingleNote(previewNote);
       }
       this.canvasContext.stroke();

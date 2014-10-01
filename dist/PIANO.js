@@ -500,7 +500,7 @@ var PIANO = function() {
     function a(a, b) {
         this.container = a, this.canvas = a.appendChild(document.createElement("canvas")), 
         this.canvas.className = "piano-canvas", this.canvasContext = this.canvas.getContext("2d"), 
-        this.keyboardSize = 88, this.clipLength = 64, this.width = null, this.height = null, 
+        this.keyboardSize = 88, this.clipLength = 16, this.width = null, this.height = null, 
         this.timeScale = {
             min: .5,
             max: 1
@@ -600,9 +600,12 @@ var PIANO = function() {
     var b = [], c = [], d = function(d, e) {
         for (var f = 0; f < b.length; f++) if (b[f] == d) return;
         b.push(d), c.push(new a(d, e));
+    }, e = function(a) {
+        for (var d = 0; d < b.length; d++) if (b[d] == a) return c[d].notes.saved;
+        return [];
     };
     return key("ctrl+s", function() {
-        for (var a = 0; a < c.length; a++) console.log(c[a].notes);
+        for (var a = 0; a < c.length; a++) for (var b = 0; b < c[a].notes.saved.length; b++) console.log("{ key: " + c[a].notes.saved[b].key.toFixed(2) + ", start: " + c[a].notes.saved[b].start.toFixed(2) + ", end: " + c[a].notes.saved[b].end.toFixed(2) + " }");
         return !1;
     }), a.prototype.getTimeRange = function() {
         return this.timeScale.max - this.timeScale.min;
@@ -697,7 +700,8 @@ var PIANO = function() {
         this.canvasContext.setLineDash([ 2, 4 ]), this.canvasContext.strokeRect(Math.closestHalfPixel(a.clientX - this.canvas.clientXYDirectional("x")), Math.closestHalfPixel(a.clientY - this.canvas.clientXYDirectional("y")), Math.round(b.clientX - a.clientX), Math.round(b.clientY - a.clientY)), 
         this.canvasContext.stroke(), this.canvasContext.setLineDash([]);
     }, {
-        add: d
+        add: d,
+        getNotes: e
     };
 }();
 
@@ -708,3 +712,12 @@ Math.closestHalfPixel = Math.closestHalfPixel || function(a) {
 }, CanvasRenderingContext2D.prototype.backgroundFill = CanvasRenderingContext2D.prototype.backgroundFill || function(a) {
     this.fillStyle = a, this.fillRect(0, 0, this.canvas.width, this.canvas.height);
 };
+
+var TrackMaster = function() {
+    var a = function() {
+        return activeTarget = target, PIANO.getNotes(activeTarget);
+    };
+    return {
+        getActive: a
+    };
+}();

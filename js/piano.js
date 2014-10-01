@@ -19,8 +19,31 @@ var PIANO = (function(){
       pianoRollStack.push( new PianoRoll( container, params ) );
     };
 
+  var getNotes = function(container)
+    {
+      // Find the right set of notes based on the container
+      for( var i = 0; i < containerStack.length; i++ )
+      {
+        if( containerStack[i] == container )
+          return pianoRollStack[i].notes.saved;
+      }
+
+      // If we get here, the container is not found
+      return [];
+    };
+
   key('ctrl+s', function(){ 
-    console.log( 'SAVE! TODO lollllz' );
+    // Loop through each pianoroll
+    for( var i = 0; i < pianoRollStack.length; i++ )
+    {
+      for( var j = 0; j < pianoRollStack[i].notes.saved.length; j++ )
+      {
+        console.log( '{ key: '  +pianoRollStack[i].notes.saved[j].key.toFixed(2)+
+                     ', start: '+pianoRollStack[i].notes.saved[j].start.toFixed(2)+
+                     ', end: '  +pianoRollStack[i].notes.saved[j].end.toFixed(2)+' }' );
+      }
+    }
+
     return false;
   });
 
@@ -43,7 +66,7 @@ var PIANO = (function(){
 
     // Model
     this.keyboardSize  = 88;    // 88 keys in a piano
-    this.clipLength    = 64;    // ...in bars. 2.125 means 2 bars and 1/8th note long
+    this.clipLength    = 16;    // ...in bars. 2.125 means 2 bars and 1/8th note long
     this.width         = null;
     this.height        = null;
     this.timeScale     = { min: 0.500
@@ -449,6 +472,7 @@ var PIANO = (function(){
 
   // Return the public singleton methods
   return { add: add
+         , getNotes: getNotes
          };
 
 })();

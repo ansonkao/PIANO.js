@@ -21,7 +21,7 @@ var PIANO = function() {
         var d = null, e = function(a) {
             d = a;
             var b = c.xCoordToBar(a.clientX - c.canvas.clientXYDirectional("x")), e = c.yCoordToKey(a.clientY - c.canvas.clientXYDirectional("y")), f = c.getHoveredNote(b, e);
-            c.isDragging = c.getHoverAction(b, f), c.setActiveNotes(f);
+            c.isDragging = c.getHoverAction(b, f), c.setActiveNotes(f, key.shift), "mid" == c.isDragging && CurseWords.setExplicitCursor("grabbing");
         }, f = function(a) {
             c.renderFreshGrid();
             var b = {}, e = !1;
@@ -58,7 +58,8 @@ var PIANO = function() {
               case "max":
                 b.endDelta = c.pixelsToBar(a.clientX - d.clientX);
             }
-            c.isDragging = !1, c.applyChangesToActiveNotes(b), c.renderFreshGrid(), c.renderNotes();
+            c.isDragging = !1, c.applyChangesToActiveNotes(b), c.renderFreshGrid(), c.renderNotes(), 
+            CurseWords.clearExplicitCursor();
         };
         DragKing.addHandler(c.canvas, e, f, g);
         var h = function() {
@@ -78,7 +79,7 @@ var PIANO = function() {
                 break;
 
               case "mid":
-                g = "move";
+                g = "grab";
                 break;
 
               default:
@@ -125,8 +126,12 @@ var PIANO = function() {
         return b ? this.barToPixels(b.end - b.start) < 15 ? "mid" : this.barToPixels(-1 * b.start + a) < 4 ? "min" : this.barToPixels(b.end - a) < 4 ? "max" : "mid" : "select";
     }, a.prototype.setActiveNotes = function(a, b) {
         if (!a) return void this.clearActiveNotes();
-        b || this.clearActiveNotes(), Array.isArray(a) || (a = [ a ]), this.notes.active = this.notes.active.concat(a);
-        for (var c = 0; c < a.length; c++) this.notes.saved.splice(this.notes.saved.indexOf(a[c]), 1);
+        b || this.clearActiveNotes(), Array.isArray(a) || (a = [ a ]);
+        for (var c = 0; c < a.length; c++) {
+            -1 == this.notes.active.indexOf(a[c]) && this.notes.active.push(a[c]);
+            var d = this.notes.saved.indexOf(a[c]);
+            d > -1 && this.notes.saved.splice(d, 1);
+        }
     }, a.prototype.clearActiveNotes = function() {
         this.notes.saved = this.notes.saved.concat(this.notes.active), this.notes.active = [];
     }, a.prototype.applyChangesToActiveNotes = function(a) {
@@ -531,4 +536,164 @@ GripScroll = function() {
     this.quadraticCurveTo(.5 + a, -.5 + d, .5 + a, -.5 + d - e), this.lineTo(.5 + a, .5 + b + e), 
     this.quadraticCurveTo(.5 + a, .5 + b, .5 + a + e, .5 + b), this.closePath(), g && this.stroke(), 
     f && this.fill();
-};
+}, function(a) {
+    function b(a, b) {
+        for (var c = a.length; c--; ) if (a[c] === b) return c;
+        return -1;
+    }
+    function c(a, b) {
+        if (a.length != b.length) return !1;
+        for (var c = 0; c < a.length; c++) if (a[c] !== b[c]) return !1;
+        return !0;
+    }
+    function d(a) {
+        for (t in v) v[t] = a[B[t]];
+    }
+    function e(a) {
+        var c, e, f, g, i, j;
+        if (c = a.keyCode, -1 == b(A, c) && A.push(c), (93 == c || 224 == c) && (c = 91), 
+        c in v) {
+            v[c] = !0;
+            for (f in x) x[f] == c && (h[f] = !0);
+        } else if (d(a), h.filter.call(this, a) && c in u) for (j = n(), g = 0; g < u[c].length; g++) if (e = u[c][g], 
+        e.scope == j || "all" == e.scope) {
+            i = e.mods.length > 0;
+            for (f in v) (!v[f] && b(e.mods, +f) > -1 || v[f] && -1 == b(e.mods, +f)) && (i = !1);
+            (0 != e.mods.length || v[16] || v[18] || v[17] || v[91]) && !i || e.method(a, e) === !1 && (a.preventDefault ? a.preventDefault() : a.returnValue = !1, 
+            a.stopPropagation && a.stopPropagation(), a.cancelBubble && (a.cancelBubble = !0));
+        }
+    }
+    function f(a) {
+        var c, d = a.keyCode, e = b(A, d);
+        if (e >= 0 && A.splice(e, 1), (93 == d || 224 == d) && (d = 91), d in v) {
+            v[d] = !1;
+            for (c in x) x[c] == d && (h[c] = !1);
+        }
+    }
+    function g() {
+        for (t in v) v[t] = !1;
+        for (t in x) h[t] = !1;
+    }
+    function h(a, b, c) {
+        var d, e;
+        d = p(a), void 0 === c && (c = b, b = "all");
+        for (var f = 0; f < d.length; f++) e = [], a = d[f].split("+"), a.length > 1 && (e = q(a), 
+        a = [ a[a.length - 1] ]), a = a[0], a = z(a), a in u || (u[a] = []), u[a].push({
+            shortcut: d[f],
+            scope: b,
+            method: c,
+            key: d[f],
+            mods: e
+        });
+    }
+    function i(a, b) {
+        var d, e, f, g, h, i = [];
+        for (d = p(a), g = 0; g < d.length; g++) {
+            if (e = d[g].split("+"), e.length > 1 && (i = q(e), a = e[e.length - 1]), a = z(a), 
+            void 0 === b && (b = n()), !u[a]) return;
+            for (f in u[a]) h = u[a][f], h.scope === b && c(h.mods, i) && (u[a][f] = {});
+        }
+    }
+    function j(a) {
+        return "string" == typeof a && (a = z(a)), -1 != b(A, a);
+    }
+    function k() {
+        return A.slice(0);
+    }
+    function l(a) {
+        var b = (a.target || a.srcElement).tagName;
+        return !("INPUT" == b || "SELECT" == b || "TEXTAREA" == b);
+    }
+    function m(a) {
+        w = a || "all";
+    }
+    function n() {
+        return w || "all";
+    }
+    function o(a) {
+        var b, c, d;
+        for (b in u) for (c = u[b], d = 0; d < c.length; ) c[d].scope === a ? c.splice(d, 1) : d++;
+    }
+    function p(a) {
+        var b;
+        return a = a.replace(/\s/g, ""), b = a.split(","), "" == b[b.length - 1] && (b[b.length - 2] += ","), 
+        b;
+    }
+    function q(a) {
+        for (var b = a.slice(0, a.length - 1), c = 0; c < b.length; c++) b[c] = x[b[c]];
+        return b;
+    }
+    function r(a, b, c) {
+        a.addEventListener ? a.addEventListener(b, c, !1) : a.attachEvent && a.attachEvent("on" + b, function() {
+            c(window.event);
+        });
+    }
+    function s() {
+        var b = a.key;
+        return a.key = C, b;
+    }
+    var t, u = {}, v = {
+        16: !1,
+        18: !1,
+        17: !1,
+        91: !1
+    }, w = "all", x = {
+        "⇧": 16,
+        shift: 16,
+        "⌥": 18,
+        alt: 18,
+        option: 18,
+        "⌃": 17,
+        ctrl: 17,
+        control: 17,
+        "⌘": 91,
+        command: 91
+    }, y = {
+        backspace: 8,
+        tab: 9,
+        clear: 12,
+        enter: 13,
+        "return": 13,
+        esc: 27,
+        escape: 27,
+        space: 32,
+        left: 37,
+        up: 38,
+        right: 39,
+        down: 40,
+        del: 46,
+        "delete": 46,
+        home: 36,
+        end: 35,
+        pageup: 33,
+        pagedown: 34,
+        ",": 188,
+        ".": 190,
+        "/": 191,
+        "`": 192,
+        "-": 189,
+        "=": 187,
+        ";": 186,
+        "'": 222,
+        "[": 219,
+        "]": 221,
+        "\\": 220
+    }, z = function(a) {
+        return y[a] || a.toUpperCase().charCodeAt(0);
+    }, A = [];
+    for (t = 1; 20 > t; t++) y["f" + t] = 111 + t;
+    var B = {
+        16: "shiftKey",
+        18: "altKey",
+        17: "ctrlKey",
+        91: "metaKey"
+    };
+    for (t in x) h[t] = !1;
+    r(document, "keydown", function(a) {
+        e(a);
+    }), r(document, "keyup", f), r(window, "focus", g);
+    var C = a.key;
+    a.key = h, a.key.setScope = m, a.key.getScope = n, a.key.deleteScope = o, a.key.filter = l, 
+    a.key.isPressed = j, a.key.getPressedKeyCodes = k, a.key.noConflict = s, a.key.unbind = i, 
+    "undefined" != typeof module && (module.exports = key);
+}(this);

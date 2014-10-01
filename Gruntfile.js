@@ -18,7 +18,8 @@ module.exports = function(grunt) {
         files: {
           "dist/PIANO.js": [
             "js/*.js",
-            "bower_components/gripscroll/dist/GripScroll.js"
+            "bower_components/gripscroll/dist/GripScroll.js",
+            "bower_components/keymaster/keymaster.js"
           ]
         },
         options: {

@@ -90,7 +90,10 @@ var PIANO = (function(){
         var  keyPosition = that.yCoordToKey( e.clientY - that.canvas.clientXYDirectional('y') );
         var  activeNote  = that.getHoveredNote(timePosition, keyPosition);
         that.isDragging  = that.getHoverAction(timePosition, activeNote);
-        that.setActiveNotes(activeNote);
+        that.setActiveNotes(activeNote, key.shift);
+
+        // Set the cursor if necessary
+        if( that.isDragging == 'mid' ) CurseWords.setExplicitCursor('grabbing');
       };
     var dragHandler = function (e)
       {
@@ -130,7 +133,7 @@ var PIANO = (function(){
           case 'mid':
             noteChanges.keyDelta   = that.pixelsToKey( e.clientY - startEvent.clientY );
             noteChanges.startDelta = that.pixelsToBar( e.clientX - startEvent.clientX );
-            noteChanges.endDelta   = noteChanges.startDelta
+            noteChanges.endDelta   = noteChanges.startDelta;
             break;
           case 'min':
             noteChanges.startDelta = that.pixelsToBar( e.clientX - startEvent.clientX );
@@ -147,6 +150,7 @@ var PIANO = (function(){
         that.applyChangesToActiveNotes(noteChanges);
         that.renderFreshGrid();
         that.renderNotes();
+        CurseWords.clearExplicitCursor();
       };
     DragKing.addHandler( that.canvas, gripHandler, dragHandler, dropHandler );
 
@@ -179,7 +183,7 @@ var PIANO = (function(){
         {
           case 'min': newCursor = 'xresize'; break;
           case 'max': newCursor = 'xresize'; break;
-          case 'mid': newCursor = 'move'   ; break;
+          case 'mid': newCursor = 'grab'   ; break;
              default: newCursor = 'default';
         }
         return newCursor;
@@ -249,9 +253,19 @@ var PIANO = (function(){
 
       if( ! union ) this.clearActiveNotes();                // Remove the previously active notes
       if( ! Array.isArray(notes) ) notes = [notes];         // Make sure notes is in array form if just 1 note is provided
-      this.notes.active = this.notes.active.concat(notes);  // Add the new active notes
-      for( var i = 0; i < notes.length; i++ )               // Remove them from the saved stack
-        this.notes.saved.splice( this.notes.saved.indexOf( notes[i] ), 1 );
+
+      // Do the setting of the new notes
+      for( var i = 0; i < notes.length; i++ )               
+      {
+        // Add the new active notes, ONLY if it isn't already there
+        if( this.notes.active.indexOf( notes[i] ) == -1 )
+          this.notes.active.push( notes[i] );
+
+        // Remove the note from the saved stack, ONLY if it isn't already removed
+        var noteInSaved = this.notes.saved.indexOf( notes[i] )  
+        if( noteInSaved > -1 )
+          this.notes.saved.splice( noteInSaved, 1 );
+      }
     };
 
   // Clear all the active notes (nothing being interacted with by the mouse)

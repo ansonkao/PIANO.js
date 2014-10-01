@@ -724,11 +724,35 @@ Math.closestHalfPixel = Math.closestHalfPixel || function(a) {
     this.fillStyle = a, this.fillRect(0, 0, this.canvas.width, this.canvas.height);
 };
 
-var TrackMaster = function() {
-    var a = function() {
-        return activeTarget = target, PIANO.getNotes(activeTarget);
+var Transport = function() {
+    var a = [], b = [], c = [], d = 130, e = 1 / (d / 60), f = new AudioContext(), g = (function() {
+        for (i = 1; 88 >= i; i++) b[i] = 440 * Math.pow(2, (i - 49) / 12);
+    }(), function(a, c, d, g) {
+        a = f.createOscillator(), a.connect(f.destination), a.frequency.value = b[c], a.start(e * d), 
+        a.stop(e * g);
+    }), h = function() {
+        a = [ {
+            key: 41,
+            start: 0,
+            end: .5
+        }, {
+            key: 40,
+            start: .5,
+            end: 1
+        }, {
+            key: 39,
+            start: 1,
+            end: 1.5
+        }, {
+            key: 38,
+            start: 1.5,
+            end: 2
+        } ];
+    }, j = function() {
+        h();
+        for (i in a) g(c[i], a[i].key, a[i].start, a[i].end);
     };
     return {
-        getActive: a
+        play: j
     };
 }();

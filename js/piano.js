@@ -19,6 +19,11 @@ var PIANO = (function(){
       pianoRollStack.push( new PianoRoll( container, params ) );
     };
 
+  key('ctrl+s', function(){ 
+    console.log( 'SAVE! TODO lollllz' );
+    return false;
+  });
+
   // ==========================================================================
   // PianoRoll definition
   // ==========================================================================

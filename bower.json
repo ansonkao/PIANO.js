@@ -21,5 +21,9 @@
     "bower_components",
     "test",
     "tests"
-  ]
+  ],
+  "devDependencies": {
+    "keymaster": "~1.6.2",
+    "gripscroll": "~0.2.0"
+  }
 }

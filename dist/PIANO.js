@@ -21,7 +21,15 @@ var PIANO = function() {
         var d = null, e = function(a) {
             d = a;
             var b = c.xCoordToBar(a.clientX - c.canvas.clientXYDirectional("x")), e = c.yCoordToKey(a.clientY - c.canvas.clientXYDirectional("y")), f = c.getHoveredNote(b, e);
-            c.isDragging = c.getHoverAction(b, f), c.setActiveNotes(f, key.shift), "mid" == c.isDragging && CurseWords.setExplicitCursor("grabbing");
+            switch (c.isDragging = c.getHoverAction(b, f), c.setActiveNotes(f, key.shift), c.isDragging) {
+              case "mid":
+                CurseWords.setExplicitCursor("grabbing");
+                break;
+
+              case "min":
+              case "max":
+                CurseWords.setExplicitCursor("xresize");
+            }
         }, f = function(a) {
             c.renderFreshGrid();
             var b = {}, e = !1;

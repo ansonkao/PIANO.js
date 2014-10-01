@@ -93,7 +93,13 @@ var PIANO = (function(){
         that.setActiveNotes(activeNote, key.shift);
 
         // Set the cursor if necessary
-        if( that.isDragging == 'mid' ) CurseWords.setExplicitCursor('grabbing');
+        switch( that.isDragging )
+        {
+          case 'mid': CurseWords.setExplicitCursor('grabbing'); break;
+          case 'min':
+          case 'max': CurseWords.setExplicitCursor('xresize'); break;
+          default:
+        }
       };
     var dragHandler = function (e)
       {

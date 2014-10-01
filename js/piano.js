@@ -228,7 +228,34 @@ var PIANO = (function(){
         that.renderNotes();
       };
     CurseWords.addImplicitCursorHandler( that.canvas, enterHandler, hoverHandler, exitHandler );
-  }
+  
+    // ------------------------------------------------------------------------
+    // DoubleClick handling
+    // ------------------------------------------------------------------------
+    container.addEventListener('dblclick', function(e){
+      var timePosition = that.xCoordToBar( e.clientX - that.canvas.clientXYDirectional('x') );
+      var  keyPosition = that.yCoordToKey( e.clientY - that.canvas.clientXYDirectional('y') );
+      var  activeNote  = that.getHoveredNote(timePosition, keyPosition);
+
+      // If we doubleclicked an existing note, DELETE
+      if( activeNote )
+      {
+        var noteInActive = that.notes.active.indexOf( activeNote );
+        if( noteInActive > -1 )
+          that.notes.active.splice( noteInActive, 1 );
+      }
+
+      // If we doubleclicked a blank area, CREATE NEW NOTE
+      else
+      {
+        var newNote = {};
+            newNote.key   = Math.round( keyPosition );
+            newNote.start = Math.floor( timePosition * 4 ) * 0.25;
+            newNote.end   = Math.ceil(  timePosition * 4 ) * 0.25;
+        that.setActiveNotes( newNote );
+      }
+    });
+}
 
   // ------------------------------------------------------------------------
   // Prototype Methods - Coordinates Helpers

@@ -595,7 +595,17 @@ var PIANO = function() {
         }, j = function() {
             c.renderFreshGrid(), c.renderNotes();
         };
-        CurseWords.addImplicitCursorHandler(c.canvas, h, i, j);
+        CurseWords.addImplicitCursorHandler(c.canvas, h, i, j), a.addEventListener("dblclick", function(a) {
+            var b = c.xCoordToBar(a.clientX - c.canvas.clientXYDirectional("x")), d = c.yCoordToKey(a.clientY - c.canvas.clientXYDirectional("y")), e = c.getHoveredNote(b, d);
+            if (e) {
+                var f = c.notes.active.indexOf(e);
+                f > -1 && c.notes.active.splice(f, 1);
+            } else {
+                var g = {};
+                g.key = Math.round(d), g.start = .25 * Math.floor(4 * b), g.end = .25 * Math.ceil(4 * b), 
+                c.setActiveNotes(g);
+            }
+        });
     }
     var b = [], c = [], d = function(d, e) {
         for (var f = 0; f < b.length; f++) if (b[f] == d) return;

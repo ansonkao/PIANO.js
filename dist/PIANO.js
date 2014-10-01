@@ -601,8 +601,9 @@ var PIANO = function() {
                 var f = c.notes.active.indexOf(e);
                 f > -1 && c.notes.active.splice(f, 1);
             } else {
+                console.log(d, Math.round(d));
                 var g = {};
-                g.key = Math.round(d), g.start = .25 * Math.floor(4 * b), g.end = .25 * Math.ceil(4 * b), 
+                g.key = Math.ceil(d), g.start = .25 * Math.floor(4 * b), g.end = .25 * Math.ceil(4 * b), 
                 c.setActiveNotes(g);
             }
         });

@@ -23,6 +23,9 @@ body.curse-words-grabbing {
   cursor: grabbing;
   cursor: -webkit-grabbing;
 }
+body.curse-words-move {
+  cursor: move;
+}
 .gripscroll {
   position: relative;
   box-sizing: border-box;

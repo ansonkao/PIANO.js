@@ -68,11 +68,11 @@ var PIANO = (function(){
 
     // Redraw upon scroll
     container.addEventListener('gripscroll-update', function (e){
-      switch( e.direction )
-      {
-        case 'x': that.timeScale.min = e.min; that.timeScale.max = e.max; break;
-        case 'y': that.keyScale.min  = e.min; that.keyScale.max  = e.max; break;
-      }
+      that.timeScale.min = e.gripScrollX.min;
+      that.timeScale.max = e.gripScrollX.max;
+      that.keyScale.min  = e.gripScrollY.min;
+      that.keyScale.max  = e.gripScrollY.max;
+
       that.renderFreshGrid();
       that.renderNotes();
     });

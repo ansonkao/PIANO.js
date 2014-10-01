@@ -653,12 +653,16 @@
                          , { key: 82, start: 51.75, end: 52.00 }
                          ];
 
-    var scrollParams = { x1: 0.075, x2: 0.200, y1: 0.400, y2: 0.700 };
+    var scrollParams = { x: {min: 0.075, max: 0.200 }
+                       , y: {min: 0.400, max: 0.700 }
+                       };
 
     var target = document.getElementById('target');
 
          PIANO.add( target, pianoParams  );
     GripScroll.add( target, scrollParams );
+    
+    GripScroll.triggerUpdate( target );
   </script>
 
 </body>

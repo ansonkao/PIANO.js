@@ -23,38 +23,30 @@ var PIANO = function() {
               case "y":
                 c.keyScale.min = a.min, c.keyScale.max = a.max;
             }
-            c.renderAll();
+            c.renderFreshGrid(), c.renderNotes();
         });
-        var d = null, e = null, f = null, g = function(a) {
-            c.isDragging = !0, d = a;
-            var b = c.xCoordToBar(a.clientX - c.canvas.clientXYDirectional("x")), g = c.yCoordToKey(a.clientY - c.canvas.clientXYDirectional("y"));
-            f = c.getHoveredNote(b, g), e = c.getHoverAction(b, f), c.notes.active = f ? [ f ] : [];
-        }, h = function(a) {
-            switch (e) {
-              case "min":
-              case "max":
-                break;
-
-              case "mid":
-                c.renderAll({
-                    timeDelta: c.pixelsToBar(a.clientX - d.clientX),
-                    keyDelta: c.pixelsToKey(a.clientY - d.clientY)
-                });
-                break;
-
-              default:
-                c.renderAll(), c.renderSelectionBox(d, a);
-            }
-        }, i = function() {
-            c.isDragging = !1, c.notes.active = [], c.renderAll();
+        var d = null, e = function(a) {
+            d = a;
+            var b = c.xCoordToBar(a.clientX - c.canvas.clientXYDirectional("x")), e = c.yCoordToKey(a.clientY - c.canvas.clientXYDirectional("y")), f = c.getHoveredNote(b, e);
+            c.isDragging = c.getHoverAction(b, f), c.setActiveNotes(f);
+        }, f = function(a) {
+            "mid" == c.isDragging ? (c.renderFreshGrid(), c.renderNotes({
+                startDelta: c.pixelsToBar(a.clientX - d.clientX),
+                keyDelta: c.pixelsToKey(a.clientY - d.clientY)
+            })) : (c.renderFreshGrid(), c.renderNotes(), c.renderSelectionBox(d, a));
+        }, g = function(a) {
+            "mid" == c.isDragging && c.applyChangesToActiveNotes({
+                startDelta: c.pixelsToBar(a.clientX - d.clientX),
+                keyDelta: c.pixelsToKey(a.clientY - d.clientY)
+            }), c.isDragging = !1, c.renderFreshGrid(), c.renderNotes();
         };
-        DragKing.addHandler(c.canvas, g, h, i);
-        var j = function() {
+        DragKing.addHandler(c.canvas, e, f, g);
+        var h = function() {
             c.isHovering = !0;
-        }, k = function(a) {
+        }, i = function(a) {
             if (c.isDragging) return null;
             var b = c.xCoordToBar(a.clientX - c.canvas.clientXYDirectional("x")), d = c.yCoordToKey(a.clientY - c.canvas.clientXYDirectional("y")), e = c.getHoveredNote(b, d), f = c.getHoverAction(b, e);
-            c.notes.active = e ? [ e ] : [], c.renderAll();
+            c.renderFreshGrid(), c.renderNotes();
             var g = null;
             switch (f) {
               case "min":
@@ -66,17 +58,17 @@ var PIANO = function() {
                 break;
 
               case "mid":
-                g = "default";
+                g = "move";
                 break;
 
               default:
                 g = "default";
             }
             return g;
-        }, l = function() {
-            c.notes.active = [], c.renderAll();
+        }, j = function() {
+            c.renderFreshGrid(), c.renderNotes();
         };
-        CurseWords.addImplicitCursorHandler(c.canvas, j, k, l);
+        CurseWords.addImplicitCursorHandler(c.canvas, h, i, j);
     }
     var b = [], c = [], d = function(d, e) {
         for (var f = 0; f < b.length; f++) if (b[f] == d) return;
@@ -107,15 +99,28 @@ var PIANO = function() {
     }, a.prototype.yCoordToKey = function(a) {
         return (1 - (a / this.height * this.getKeyRange() + this.keyScale.min)) * this.keyboardSize;
     }, a.prototype.getHoveredNote = function(a, b) {
-        for (var c = 0; c < this.notes.saved.length; c++) if (a >= this.notes.saved[c].position && a <= this.notes.saved[c].position + this.notes.saved[c].length && this.notes.saved[c].key - b < 1 && this.notes.saved[c].key - b > 0) return this.notes.saved[c];
+        for (var c = this.notes.saved.concat(this.notes.active), d = 0; d < c.length; d++) if (a >= c[d].start && a <= c[d].start + c[d].length && c[d].key - b < 1 && c[d].key - b > 0) return c[d];
         return null;
     }, a.prototype.getHoverAction = function(a, b) {
-        return b ? this.barToPixels(b.length) < 15 ? "mid" : this.barToPixels(a - b.position) < 4 ? "min" : this.barToPixels(b.position + b.length - a) < 4 ? "max" : "mid" : null;
+        return b ? this.barToPixels(b.length) < 15 ? "mid" : this.barToPixels(a - b.start) < 4 ? "min" : this.barToPixels(b.start + b.length - a) < 4 ? "max" : "mid" : "select";
+    }, a.prototype.setActiveNotes = function(a, b) {
+        if (!a) return void this.clearActiveNotes();
+        b || this.clearActiveNotes(), Array.isArray(a) || (a = [ a ]), this.notes.active = this.notes.active.concat(a);
+        for (var c = 0; c < a.length; c++) this.notes.saved.splice(this.notes.saved.indexOf(a[c]), 1);
+    }, a.prototype.clearActiveNotes = function() {
+        this.notes.saved = this.notes.saved.concat(this.notes.active), this.notes.active = [];
+    }, a.prototype.applyChangesToActiveNotes = function(a) {
+        if (a) for (var b = 0; b < this.notes.active.length; b++) a.startDelta && (this.notes.active[b].start += a.startDelta), 
+        a.keyDelta && (this.notes.active[b].key += a.keyDelta), a.lengthDelta && (this.notes.active[b].length += a.lengthDelta), 
+        this.quantizeNote(this.notes.active[b]);
+    }, a.prototype.quantizeNote = function(a) {
+        return a.key = Math.round(a.key), a.start = .125 * Math.round(8 * a.start), a.length = .125 * Math.round(8 * a.length), 
+        a;
     }, a.prototype.init = function() {
         this.canvas.width = this.width = this.container.clientWidth, this.canvas.height = this.height = this.container.clientHeight;
-    }, a.prototype.renderAll = function(a) {
+    }, a.prototype.renderFreshGrid = function() {
         this.canvasContext.clear(), this.canvasContext.backgroundFill("#EEEEEE"), this.renderKeyScale(), 
-        this.renderTimeScale(), this.renderNotes(a);
+        this.renderTimeScale();
     }, a.prototype.renderKeyScale = function() {
         this.canvasContext.lineWidth = 1, this.canvasContext.strokeStyle = "#D4D4E0", this.canvasContext.fillStyle = "#DDDDE4";
         for (var a = this.percentToKey(this.keyScale.min); a <= this.percentToKey(this.keyScale.max); a++) {
@@ -139,20 +144,20 @@ var PIANO = function() {
     }, a.prototype.renderNotes = function(a) {
         this.canvasContext.beginPath(), this.canvasContext.lineWidth = 1, this.canvasContext.strokeStyle = "#812", 
         this.canvasContext.fillStyle = "#F24";
-        for (var b = 0; b < this.notes.saved.length; b++) this.notes.active.indexOf(this.notes.saved[b]) >= 0 || this.renderSingleNote(this.notes.saved[b]);
+        for (var b = 0; b < this.notes.saved.length; b++) this.renderSingleNote(this.notes.saved[b]);
         this.canvasContext.stroke(), this.canvasContext.beginPath(), this.canvasContext.lineWidth = 1, 
         this.canvasContext.strokeStyle = "#401", this.canvasContext.fillStyle = "#812";
         for (var c = 0; c < this.notes.active.length; c++) {
-            var d = .125 * Math.round(8 * (a && a.timeDelta || 0)), e = Math.round(a && a.keyDelta || 0);
-            this.renderSingleNote({
+            var d = a && a.startDelta || 0, e = a && a.keyDelta || 0, f = this.quantizeNote({
                 key: this.notes.active[c].key + e,
-                position: this.notes.active[c].position + d,
+                start: this.notes.active[c].start + d,
                 length: this.notes.active[c].length
             });
+            this.renderSingleNote(f);
         }
         this.canvasContext.stroke();
     }, a.prototype.renderSingleNote = function(a) {
-        var b = Math.closestHalfPixel(this.barToXCoord(a.position)), c = Math.closestHalfPixel(this.barToXCoord(a.position + a.length)), d = Math.closestHalfPixel(this.keyToYCoord(this.keyboardSize - a.key)), e = Math.closestHalfPixel(this.keyToYCoord(this.keyboardSize - a.key + 1));
+        var b = Math.closestHalfPixel(this.barToXCoord(a.start)), c = Math.closestHalfPixel(this.barToXCoord(a.start + a.length)), d = Math.closestHalfPixel(this.keyToYCoord(this.keyboardSize - a.key)), e = Math.closestHalfPixel(this.keyToYCoord(this.keyboardSize - a.key + 1));
         this.canvasContext.fillRect(b + 1, d + 2, c - b - 3, e - d - 4), this.canvasContext.strokeRect(b + 0, d + 1, c - b - 1, e - d - 2);
     }, a.prototype.renderSelectionBox = function(a, b) {
         this.canvasContext.beginPath(), this.canvasContext.lineWidth = 1, this.canvasContext.strokeStyle = "#000", 

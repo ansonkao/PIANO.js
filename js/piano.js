@@ -190,7 +190,7 @@ var PIANO = (function(){
       var allNotes = this.notes.saved.concat( this.notes.active );
       for( var i = 0; i < allNotes.length; i++ )
         if( timePositionBars >= allNotes[i].start
-         && timePositionBars <= allNotes[i].start + allNotes[i].length
+         && timePositionBars <= allNotes[i].end
          && allNotes[i].key - key < 1
          && allNotes[i].key - key > 0
         )
@@ -204,10 +204,10 @@ var PIANO = (function(){
       if( ! hoveredNote )
         return 'select';
 
-           if( this.barToPixels( hoveredNote.length                                        ) < 15 ) return 'mid';
-      else if( this.barToPixels( timePositionBars  - hoveredNote.start                     ) <  4 ) return 'min';
-      else if( this.barToPixels( hoveredNote.start + hoveredNote.length - timePositionBars ) <  4 ) return 'max';
-      else                                                                                          return 'mid';
+           if( this.barToPixels(     hoveredNote.end   - hoveredNote.start ) < 15 ) return 'mid';
+      else if( this.barToPixels( -1* hoveredNote.start + timePositionBars  ) <  4 ) return 'min';
+      else if( this.barToPixels(     hoveredNote.end   - timePositionBars  ) <  4 ) return 'max';
+      else                                                                          return 'mid';
     };
 
   // Set the specified notes as active (being interacted with by the mouse)
@@ -242,11 +242,12 @@ var PIANO = (function(){
       for( var i = 0; i < this.notes.active.length; i++ )
       {
         if( params.startDelta )
+        {
           this.notes.active[i].start += params.startDelta;
-        if( params.keyDelta )
-          this.notes.active[i].key += params.keyDelta;
-        if( params.lengthDelta )
-          this.notes.active[i].length += params.lengthDelta;
+          this.notes.active[i].end   += params.startDelta;
+        }
+        if( params.keyDelta    ) this.notes.active[i].key += params.keyDelta;
+        if( params.lengthDelta ) this.notes.active[i].end += params.lengthDelta;
 
         this.quantizeNote( this.notes.active[i] );
       }
@@ -254,9 +255,9 @@ var PIANO = (function(){
 
   PianoRoll.prototype.quantizeNote = function(note)
     {
-      note.key    = Math.round( note.key );
-      note.start  = Math.round( note.start * 8 ) * 0.125;
-      note.length = Math.round( note.length * 8 ) * 0.125;
+      note.key   = Math.round( note.key       );
+      note.start = Math.round( note.start * 8 ) * 0.125;
+      note.end   = Math.round( note.end   * 8 ) * 0.125;
       return note;
     };
 
@@ -359,9 +360,9 @@ var PIANO = (function(){
       {
         var startDelta = params && params.startDelta || 0.0;
         var   keyDelta = params && params.keyDelta   || 0.0;
-        var previewNote = this.quantizeNote({ key:    this.notes.active[j].key    + keyDelta
-                                            , start:  this.notes.active[j].start  + startDelta
-                                            , length: this.notes.active[j].length
+        var previewNote = this.quantizeNote({ key:   this.notes.active[j].key    + keyDelta
+                                            , start: this.notes.active[j].start  + startDelta
+                                            , end:   this.notes.active[j].end    + startDelta
                                             });
         this.renderSingleNote(previewNote);
       }
@@ -372,7 +373,7 @@ var PIANO = (function(){
   PianoRoll.prototype.renderSingleNote = function(note)
     {
       var x1 = Math.closestHalfPixel( this.barToXCoord( note.start ) );
-      var x2 = Math.closestHalfPixel( this.barToXCoord( note.start + note.length ) );
+      var x2 = Math.closestHalfPixel( this.barToXCoord( note.end   ) );
       var y1 = Math.closestHalfPixel( this.keyToYCoord( this.keyboardSize - note.key ) );
       var y2 = Math.closestHalfPixel( this.keyToYCoord( this.keyboardSize - note.key  + 1 ) );
       this.canvasContext.fillRect  ( x1 + 1, y1 + 2, x2 - x1 - 3, y2 - y1 - 4 );

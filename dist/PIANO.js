@@ -99,10 +99,10 @@ var PIANO = function() {
     }, a.prototype.yCoordToKey = function(a) {
         return (1 - (a / this.height * this.getKeyRange() + this.keyScale.min)) * this.keyboardSize;
     }, a.prototype.getHoveredNote = function(a, b) {
-        for (var c = this.notes.saved.concat(this.notes.active), d = 0; d < c.length; d++) if (a >= c[d].start && a <= c[d].start + c[d].length && c[d].key - b < 1 && c[d].key - b > 0) return c[d];
+        for (var c = this.notes.saved.concat(this.notes.active), d = 0; d < c.length; d++) if (a >= c[d].start && a <= c[d].end && c[d].key - b < 1 && c[d].key - b > 0) return c[d];
         return null;
     }, a.prototype.getHoverAction = function(a, b) {
-        return b ? this.barToPixels(b.length) < 15 ? "mid" : this.barToPixels(a - b.start) < 4 ? "min" : this.barToPixels(b.start + b.length - a) < 4 ? "max" : "mid" : "select";
+        return b ? this.barToPixels(b.end - b.start) < 15 ? "mid" : this.barToPixels(-1 * b.start + a) < 4 ? "min" : this.barToPixels(b.end - a) < 4 ? "max" : "mid" : "select";
     }, a.prototype.setActiveNotes = function(a, b) {
         if (!a) return void this.clearActiveNotes();
         b || this.clearActiveNotes(), Array.isArray(a) || (a = [ a ]), this.notes.active = this.notes.active.concat(a);
@@ -110,11 +110,11 @@ var PIANO = function() {
     }, a.prototype.clearActiveNotes = function() {
         this.notes.saved = this.notes.saved.concat(this.notes.active), this.notes.active = [];
     }, a.prototype.applyChangesToActiveNotes = function(a) {
-        if (a) for (var b = 0; b < this.notes.active.length; b++) a.startDelta && (this.notes.active[b].start += a.startDelta), 
-        a.keyDelta && (this.notes.active[b].key += a.keyDelta), a.lengthDelta && (this.notes.active[b].length += a.lengthDelta), 
-        this.quantizeNote(this.notes.active[b]);
+        if (a) for (var b = 0; b < this.notes.active.length; b++) a.startDelta && (this.notes.active[b].start += a.startDelta, 
+        this.notes.active[b].end += a.startDelta), a.keyDelta && (this.notes.active[b].key += a.keyDelta), 
+        a.lengthDelta && (this.notes.active[b].end += a.lengthDelta), this.quantizeNote(this.notes.active[b]);
     }, a.prototype.quantizeNote = function(a) {
-        return a.key = Math.round(a.key), a.start = .125 * Math.round(8 * a.start), a.length = .125 * Math.round(8 * a.length), 
+        return a.key = Math.round(a.key), a.start = .125 * Math.round(8 * a.start), a.end = .125 * Math.round(8 * a.end), 
         a;
     }, a.prototype.init = function() {
         this.canvas.width = this.width = this.container.clientWidth, this.canvas.height = this.height = this.container.clientHeight;
@@ -151,13 +151,13 @@ var PIANO = function() {
             var d = a && a.startDelta || 0, e = a && a.keyDelta || 0, f = this.quantizeNote({
                 key: this.notes.active[c].key + e,
                 start: this.notes.active[c].start + d,
-                length: this.notes.active[c].length
+                end: this.notes.active[c].end + d
             });
             this.renderSingleNote(f);
         }
         this.canvasContext.stroke();
     }, a.prototype.renderSingleNote = function(a) {
-        var b = Math.closestHalfPixel(this.barToXCoord(a.start)), c = Math.closestHalfPixel(this.barToXCoord(a.start + a.length)), d = Math.closestHalfPixel(this.keyToYCoord(this.keyboardSize - a.key)), e = Math.closestHalfPixel(this.keyToYCoord(this.keyboardSize - a.key + 1));
+        var b = Math.closestHalfPixel(this.barToXCoord(a.start)), c = Math.closestHalfPixel(this.barToXCoord(a.end)), d = Math.closestHalfPixel(this.keyToYCoord(this.keyboardSize - a.key)), e = Math.closestHalfPixel(this.keyToYCoord(this.keyboardSize - a.key + 1));
         this.canvasContext.fillRect(b + 1, d + 2, c - b - 3, e - d - 4), this.canvasContext.strokeRect(b + 0, d + 1, c - b - 1, e - d - 2);
     }, a.prototype.renderSelectionBox = function(a, b) {
         this.canvasContext.beginPath(), this.canvasContext.lineWidth = 1, this.canvasContext.strokeStyle = "#000", 

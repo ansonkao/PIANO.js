@@ -248,13 +248,16 @@ var PIANO = (function(){
       // If we doubleclicked a blank area, CREATE NEW NOTE
       else
       {
-        console.log( keyPosition, Math.round( keyPosition ) );
         var newNote = {};
             newNote.key   = Math.ceil( keyPosition );
             newNote.start = Math.floor( timePosition * 4 ) * 0.25;
             newNote.end   = Math.ceil(  timePosition * 4 ) * 0.25;
         that.setActiveNotes( newNote );
       }
+
+      // Redraw it all!
+      that.renderFreshGrid();
+      that.renderNotes();
     });
 }
 

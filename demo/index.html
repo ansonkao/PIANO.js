@@ -37,7 +37,13 @@
       <div id="target" class="gripscroll">
       </div>
 
-      <a id="play">Play</a>
+      <footer>
+        <div id="transport">
+          <button id="play"><span class="icon" style="color: #080;">&#9658;</span></button>
+          <button id="stop"><span class="icon" style="color: #000;">&#8718;</span></button>
+          <input id="tempo" type="number" step="1" value="128" />
+        </div>
+      </footer>
 
     </div>
   </main>
@@ -45,8 +51,11 @@
   <script lang="text/javascript" src="../dist/PIANO.js"></script>
   <script lang="text/javascript">
     var pianoParams = {};
-    var scrollParams = { x: {min: 0.000, max: 0.250 }
-                       , y: {min: 0.420, max: 0.557 }
+        pianoParams.notes = [// { key: 44, start:  0.00, end:  1.00 }
+                            //, { key: 48, start:  1.00, end:  1.25 }
+                            ];
+    var scrollParams = { x: {min: 0.000, max: 0.500 }
+                       , y: {min: 0.410, max: 0.705 }
                        };
 
     var target = document.getElementById('target');
@@ -56,12 +65,10 @@
 
     GripScroll.triggerUpdate( target );
 
-    var playButton = document.getElementById("play");
-    playButton.addEventListener('click', function(e){
-      e.preventDefault();
-      Transport.play();
-    });
-
+    // Hookup Transport UI to Transport Controller
+    document.getElementById("play" ).addEventListener('click' , function(e){ Transport.play(); e.preventDefault(); });
+    document.getElementById("stop" ).addEventListener('click' , function(e){ Transport.stop(); e.preventDefault(); });
+    document.getElementById("tempo").addEventListener('change', function(e){ Transport.setTempo( this.value ); e.preventDefault(); });
   </script>
 
 </body>

@@ -22,6 +22,7 @@ var Transport = (function(){
   var createOscillator = function( key, start, end ){
     var oscillator = ctx.createOscillator();
     oscillator.connect(ctx.destination);
+    oscillator.type = 'square';
     oscillator.frequency.value = keyFrequency[ key ];
     oscillator.start( getPlayTime( start ) );
     oscillator.stop( getPlayTime( end ) );

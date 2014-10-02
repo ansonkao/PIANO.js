@@ -38,9 +38,9 @@ var PIANO = (function(){
     {
       for( var j = 0; j < pianoRollStack[i].notes.saved.length; j++ )
       {
-        console.log( '{ key: '  +pianoRollStack[i].notes.saved[j].key.toFixed(2)+
-                     ', start: '+pianoRollStack[i].notes.saved[j].start.toFixed(2)+
-                     ', end: '  +pianoRollStack[i].notes.saved[j].end.toFixed(2)+' }' );
+        console.log( '{ key: '  +pianoRollStack[i].notes.saved[j].key              +
+                     ', start: '+pianoRollStack[i].notes.saved[j].start.toFixed(3) +
+                     ', end: '  +pianoRollStack[i].notes.saved[j].end.toFixed(3)   +' }' );
       }
     }
 
@@ -351,15 +351,21 @@ var PIANO = (function(){
         if( params.keyDelta   ) this.notes.active[i].key   += params.keyDelta;
         if( params.endDelta   ) this.notes.active[i].end   += params.endDelta;
 
-        this.quantizeNote( this.notes.active[i] );
+        this.quantizeNote( this.notes.active[i], params );
       }
     };
 
-  PianoRoll.prototype.quantizeNote = function(note)
+  PianoRoll.prototype.quantizeNote = function(note, params)
     {
-      note.key   = Math.round( note.key       );
-      note.start = Math.round( note.start * 8 ) * 0.125;
-      note.end   = Math.round( note.end   * 8 ) * 0.125;
+      // Always need to quantize the key
+      note.key = Math.round( note.key );
+
+      // User can press alt to bypass quantization aka "snap"!
+      if( key.alt ) return note;
+
+      // Snap the start and endpoints to the grid
+      if( params && params.startDelta ) note.start = Math.round( note.start * 16 ) * 0.0625;
+      if( params && params.endDelta   ) note.end   = Math.round( note.end   * 16 ) * 0.0625;
       return note;
     };
 
@@ -464,7 +470,8 @@ var PIANO = (function(){
             previewNote.start = params && params.startDelta ? this.notes.active[j].start + params.startDelta : this.notes.active[j].start;
             previewNote.key   = params && params.keyDelta   ? this.notes.active[j].key   + params.keyDelta   : this.notes.active[j].key;
             previewNote.end   = params && params.endDelta   ? this.notes.active[j].end   + params.endDelta   : this.notes.active[j].end;
-        this.quantizeNote(previewNote);
+        if( params && ( params.keyDelta || params.startDelta || params.endDelta ) )
+          this.quantizeNote(previewNote, params);
         this.renderSingleNote(previewNote);
       }
       this.canvasContext.stroke();

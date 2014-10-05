@@ -25,7 +25,7 @@ var PIANO = (function(){
       for( var i = 0; i < containerStack.length; i++ )
       {
         if( containerStack[i] == container )
-          return pianoRollStack[i].notes.saved;
+          return pianoRollStack[i].notes;
       }
 
       // If we get here, the container is not found
@@ -34,16 +34,12 @@ var PIANO = (function(){
 
   key('ctrl+s', function(){ 
     // Loop through each pianoroll
-    for( var i = 0; i < pianoRollStack.length; i++ )
-    {
-      for( var j = 0; j < pianoRollStack[i].notes.saved.length; j++ )
-      {
-        console.log( '{ key: '  +pianoRollStack[i].notes.saved[j].key              +
-                     ', start: '+pianoRollStack[i].notes.saved[j].start.toFixed(3) +
-                     ', end: '  +pianoRollStack[i].notes.saved[j].end.toFixed(3)   +' }' );
-      }
-    }
-
+    console.log("NOTES: ");
+    for( var i in pianoRollStack )
+      for( var j in pianoRollStack[i].notes )
+        console.log( '{ key: '  +pianoRollStack[i].notes[j].key              +
+                     ', start: '+pianoRollStack[i].notes[j].start.toFixed(3) +
+                     ', end: '  +pianoRollStack[i].notes[j].end.toFixed(3)   +' }' );
     return false;
   });
 
@@ -75,9 +71,7 @@ var PIANO = (function(){
     this.keyScale      = { min: 0.000
                          , max: 1.000
                          };
-    this.notes = {};
-    this.notes.saved   = params.notes || [];
-    this.notes.active  = [];
+    this.notes         = params.notes || [];
 
     this.isDragging    = false;
     this.isHovering    = false;
@@ -118,7 +112,10 @@ var PIANO = (function(){
         var  keyPosition = that.yCoordToKey( e.clientY - that.canvas.clientXYDirectional('y') );
         var  activeNote  = that.getHoveredNote(timePosition, keyPosition);
         that.isDragging  = that.getHoverAction(timePosition, activeNote);
-        that.setActiveNotes(activeNote, key.shift);
+
+        // If we're dragging an inactive note, make it active!
+        if( ! activeNote || ! activeNote.active )
+          that.setActiveNotes(activeNote, key.shift);
 
         // Set the cursor if necessary
         switch( that.isDragging )
@@ -239,11 +236,7 @@ var PIANO = (function(){
 
       // If we doubleclicked an existing note, DELETE
       if( activeNote )
-      {
-        var noteInActive = that.notes.active.indexOf( activeNote );
-        if( noteInActive > -1 )
-          that.notes.active.splice( noteInActive, 1 );
-      }
+        that.notes.splice( that.notes.indexOf( activeNote ), 1 );
 
       // If we doubleclicked a blank area, CREATE NEW NOTE
       else
@@ -263,12 +256,13 @@ var PIANO = (function(){
     // ------------------------------------------------------------------------
     // Hotkeys handling
     // ------------------------------------------------------------------------
-    key('alt', function(){
-      console.log( 'alt' );
-      that.renderFreshGrid();
-      that.renderNotes();
-      return false;
-    });
+    // TODO - this is super buggy...
+    //key('alt', function(){
+    //  console.log( 'alt' );
+    //  that.renderFreshGrid();
+    //  that.renderNotes();
+    //  return false;
+    //});
 }
 
   // ------------------------------------------------------------------------
@@ -293,14 +287,13 @@ var PIANO = (function(){
   // Which note is the cursor currently over?
   PianoRoll.prototype.getHoveredNote  = function(timePositionBars, key)
     {
-      var allNotes = this.notes.saved.concat( this.notes.active );
-      for( var i = 0; i < allNotes.length; i++ )
-        if( timePositionBars >= allNotes[i].start
-         && timePositionBars <= allNotes[i].end
-         && allNotes[i].key - key < 1
-         && allNotes[i].key - key > 0
+      for( var i = 0; i < this.notes.length; i++ )
+        if( timePositionBars >= this.notes[i].start
+         && timePositionBars <= this.notes[i].end
+         && this.notes[i].key - key < 1
+         && this.notes[i].key - key > 0
         )
-          return allNotes[i];
+          return this.notes[i];
       return null;
     };
 
@@ -333,21 +326,19 @@ var PIANO = (function(){
       for( var i = 0; i < notes.length; i++ )               
       {
         // Add the new active notes, ONLY if it isn't already there
-        if( this.notes.active.indexOf( notes[i] ) == -1 )
-          this.notes.active.push( notes[i] );
+        if( this.notes.indexOf( notes[i] ) == -1 )
+          this.notes.push( notes[i] );
 
-        // Remove the note from the saved stack, ONLY if it isn't already removed
-        var noteInSaved = this.notes.saved.indexOf( notes[i] )  
-        if( noteInSaved > -1 )
-          this.notes.saved.splice( noteInSaved, 1 );
+        // Toggle the state of the note
+        notes[i].active = !( notes[i].active );
       }
     };
 
   // Clear all the active notes (nothing being interacted with by the mouse)
   PianoRoll.prototype.clearActiveNotes = function()
     {
-      this.notes.saved = this.notes.saved.concat(this.notes.active); // Put them back in the saved stack first
-      this.notes.active = [];
+      for( var i in this.notes )
+        this.notes[i].active = false;
     };
 
   // Saves changes indicated in the params argument to the currently active notes
@@ -355,13 +346,16 @@ var PIANO = (function(){
     {
       if( ! params ) return;
 
-      for( var i = 0; i < this.notes.active.length; i++ )
+      for( var i in this.notes )
       {
-        if( params.startDelta ) this.notes.active[i].start += params.startDelta;
-        if( params.keyDelta   ) this.notes.active[i].key   += params.keyDelta;
-        if( params.endDelta   ) this.notes.active[i].end   += params.endDelta;
-
-        this.quantizeNote( this.notes.active[i], params );
+        // Only apply to active notes
+        if( this.notes[i].active )
+        {
+          if( params.startDelta ) this.notes[i].start += params.startDelta;
+          if( params.keyDelta   ) this.notes[i].key   += params.keyDelta;
+          if( params.endDelta   ) this.notes[i].end   += params.endDelta;
+          this.quantizeNote( this.notes[i], params );
+        }
       }
     };
 
@@ -373,7 +367,17 @@ var PIANO = (function(){
       // User can press alt to bypass quantization aka "snap"!
       if( key.alt ) return note;
 
-      // Snap the start and endpoints to the grid
+      // Both Start/End deltas => note being dragged from mid grip => ensure equal quantization
+      if( params && params.startDelta && params.endDelta )
+      {
+        var newStart = Math.round( note.start * 16 ) * 0.0625;
+        var quantizationAmount = newStart - note.start ;
+        note.start = newStart;
+        note.end += quantizationAmount;
+        return note;
+      }
+
+      // Individual ends - Snap the start and endpoints to the grid
       if( params && params.startDelta ) note.start = Math.round( note.start * 16 ) * 0.0625;
       if( params && params.endDelta   ) note.end   = Math.round( note.end   * 16 ) * 0.0625;
       return note;
@@ -462,32 +466,33 @@ var PIANO = (function(){
   // Draw ALL the Notes in
   PianoRoll.prototype.renderNotes = function(params)
     {
-      // Saved notes
-      this.canvasContext.beginPath();
-      this.canvasContext.lineWidth   = 1.0;
-      this.canvasContext.setLineDash([]);
-      this.canvasContext.strokeStyle = "#812";
-      this.canvasContext.fillStyle   = "#F24";
-      for( var i = 0; i < this.notes.saved.length; i++ )
-        this.renderSingleNote( this.notes.saved[i] );
-      this.canvasContext.stroke();
-
-      // Selected notes
-      this.canvasContext.beginPath();
-      this.canvasContext.lineWidth   = 1.0;
-      this.canvasContext.strokeStyle = "#401";
-      this.canvasContext.fillStyle   = "#812";
-      for( var j = 0; j < this.notes.active.length; j++ )
+      for( var i in this.notes )
       {
-        var previewNote = {};
-            previewNote.start = params && params.startDelta ? this.notes.active[j].start + params.startDelta : this.notes.active[j].start;
-            previewNote.key   = params && params.keyDelta   ? this.notes.active[j].key   + params.keyDelta   : this.notes.active[j].key;
-            previewNote.end   = params && params.endDelta   ? this.notes.active[j].end   + params.endDelta   : this.notes.active[j].end;
-        if( params && ( params.keyDelta || params.startDelta || params.endDelta ) )
-          this.quantizeNote(previewNote, params);
-        this.renderSingleNote(previewNote);
+        this.canvasContext.beginPath();
+        this.canvasContext.lineWidth   = 1.0;
+        this.canvasContext.setLineDash([]);
+
+        if( this.notes[i].active )
+        {
+          var previewNote = {};
+              previewNote.start = params && params.startDelta ? this.notes[i].start + params.startDelta : this.notes[i].start;
+              previewNote.key   = params && params.keyDelta   ? this.notes[i].key   + params.keyDelta   : this.notes[i].key;
+              previewNote.end   = params && params.endDelta   ? this.notes[i].end   + params.endDelta   : this.notes[i].end;
+          if( params && ( params.keyDelta || params.startDelta || params.endDelta ) )
+            this.quantizeNote(previewNote, params);
+          this.canvasContext.strokeStyle = "#401";
+          this.canvasContext.fillStyle   = "#812";
+          this.renderSingleNote( previewNote );
+        }
+        else
+        {
+          this.canvasContext.strokeStyle = "#812";
+          this.canvasContext.fillStyle   = "#F24";
+          this.renderSingleNote( this.notes[i] );
+        }
+
+        this.canvasContext.stroke();
       }
-      this.canvasContext.stroke();
     };
 
   // Render a single note, using the closestHalfPixel helper to avoid aliasing

@@ -259,6 +259,16 @@ var PIANO = (function(){
       that.renderFreshGrid();
       that.renderNotes();
     });
+
+    // ------------------------------------------------------------------------
+    // Hotkeys handling
+    // ------------------------------------------------------------------------
+    key('alt', function(){
+      console.log( 'alt' );
+      that.renderFreshGrid();
+      that.renderNotes();
+      return false;
+    });
 }
 
   // ------------------------------------------------------------------------
@@ -398,6 +408,7 @@ var PIANO = (function(){
     {
       // Styles
       this.canvasContext.lineWidth   = 1.0;
+      this.canvasContext.setLineDash([]);
       this.canvasContext.strokeStyle = "#D4D4E0";
       this.canvasContext.fillStyle   = "#DDDDE4";
 
@@ -428,6 +439,7 @@ var PIANO = (function(){
     {
       // Styles
       this.canvasContext.lineWidth   = 1.0;
+      key.alt ? this.canvasContext.setLineDash([2,4]) : this.canvasContext.setLineDash([]);
 
       // Draw lines for each beat
       for( var bar  = this.percentToBar( this.timeScale.min ) - 1
@@ -453,6 +465,7 @@ var PIANO = (function(){
       // Saved notes
       this.canvasContext.beginPath();
       this.canvasContext.lineWidth   = 1.0;
+      this.canvasContext.setLineDash([]);
       this.canvasContext.strokeStyle = "#812";
       this.canvasContext.fillStyle   = "#F24";
       for( var i = 0; i < this.notes.saved.length; i++ )

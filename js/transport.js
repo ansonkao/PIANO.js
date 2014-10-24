@@ -8,7 +8,7 @@ var Transport = (function(){
 
   // Initialize everything;
   masterVolume.connect( ctx.destination );
-  masterVolume.gain.value = 0.0625;
+  masterVolume.gain.value = 0.25;
 
 
   key('space', function(){ play(); return false; });
@@ -39,7 +39,7 @@ var Transport = (function(){
     {
       var notes = PIANO.getNotes( target );
 
-      for( i in notes )
+      for( var i in notes )
       {
         createOscillator( notes[i].key, notes[i].start, notes[i].end );
       }

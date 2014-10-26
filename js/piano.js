@@ -83,7 +83,7 @@ var PIANO = (function(){
     var that = this;
         that.init();
 
-    // Reinitialize dimensions up on resize
+    // Reinitialize dimensions upon resize
     window.addEventListener('resize', function (e){
       that.init();
     });
@@ -263,7 +263,7 @@ var PIANO = (function(){
     //  that.renderNotes();
     //  return false;
     //});
-}
+  }
 
   // ------------------------------------------------------------------------
   // Prototype Methods - Coordinates Helpers

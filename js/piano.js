@@ -265,6 +265,11 @@ var PIANO = (function(){
     // ------------------------------------------------------------------------
     // Hotkeys handling
     // ------------------------------------------------------------------------
+    key('del', function(){ 
+      that.deleteActiveKeys();
+      return false;
+    });
+
     // TODO - this is super buggy...
     //key('alt', function(){
     //  console.log( 'alt' );
@@ -423,6 +428,14 @@ var PIANO = (function(){
         this.notes[i].active = key.shift && (this.notes[i].active ^ this.notes[i].selected) || (key.shift == false && this.notes[i].selected);
         this.notes[i].selected  = false;
       }
+    };
+
+  // Deletes all notes marked as active
+  PianoRoll.prototype.deleteActiveKeys = function()
+    {
+      this.notes = this.notes.filter( function(el){
+        return el.active == false;
+      });
     };
 
   // ------------------------------------------------------------------------

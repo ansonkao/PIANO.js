@@ -36,10 +36,15 @@ var PIANO = (function(){
     // Loop through each pianoroll
     console.log("NOTES: ");
     for( var i in pianoRollStack )
+    {
       for( var j in pianoRollStack[i].notes )
+      {
         console.log( '{ key: '  +pianoRollStack[i].notes[j].key              +
                      ', start: '+pianoRollStack[i].notes[j].start.toFixed(3) +
                      ', end: '  +pianoRollStack[i].notes[j].end.toFixed(3)   +' }' );
+      }
+      console.log( pianoRollStack[i].notes );
+    }
     return false;
   });
 
@@ -114,7 +119,7 @@ var PIANO = (function(){
         that.isDragging  = that.getHoverAction(timePosition, activeNote);
 
         // If we're dragging an inactive note, make it active!
-        if( ! activeNote || ! activeNote.active )
+        if( that.isDragging != 'select' || activeNote && ! activeNote.active )
           that.setActiveNotes(activeNote, key.shift);
 
         // Set the cursor if necessary
@@ -123,6 +128,7 @@ var PIANO = (function(){
           case 'mid': CurseWords.setExplicitCursor('grabbing'); break;
           case 'min':
           case 'max': CurseWords.setExplicitCursor('xresize'); break;
+          case 'select':
           default:
         }
       };
@@ -146,8 +152,10 @@ var PIANO = (function(){
           case 'max':
             noteChanges.endDelta   = that.pixelsToBar( e.clientX - startEvent.clientX );
             break;
+          case 'select':
           default:
-            showSelectionBox = true; 
+            showSelectionBox = true;
+            that.selectNotesInBoundingBox( startEvent, e );
         }
 
         // Draw the notes accordingly
@@ -172,8 +180,9 @@ var PIANO = (function(){
           case 'max':
             noteChanges.endDelta   = that.pixelsToBar( e.clientX - startEvent.clientX );
             break;
+          case 'select':
           default:
-            // Do nothing...
+            that.activateSelectedNotes();
         }
 
         // Update the state
@@ -359,6 +368,7 @@ var PIANO = (function(){
       }
     };
 
+  // TODO comment
   PianoRoll.prototype.quantizeNote = function(note, params)
     {
       // Always need to quantize the key
@@ -381,6 +391,38 @@ var PIANO = (function(){
       if( params && params.startDelta ) note.start = Math.round( note.start * 16 ) * 0.0625;
       if( params && params.endDelta   ) note.end   = Math.round( note.end   * 16 ) * 0.0625;
       return note;
+    };
+
+  // Given a 2 mouse events, set all the notes intersecting the resultant bounding box as selected
+  PianoRoll.prototype.selectNotesInBoundingBox = function(startEvent, endEvent)
+    {
+      var bar1 = this.xCoordToBar( startEvent.clientX - this.canvas.clientXYDirectional('x') );
+      var key1 = this.yCoordToKey( startEvent.clientY - this.canvas.clientXYDirectional('y') );
+      var bar2 = this.xCoordToBar(   endEvent.clientX - this.canvas.clientXYDirectional('x') );
+      var key2 = this.yCoordToKey(   endEvent.clientY - this.canvas.clientXYDirectional('y') );
+      var barMin = bar1 < bar2 ? bar1 : bar2;
+      var barMax = bar1 > bar2 ? bar1 : bar2;
+      var keyMin = key1 < key2 ? key1 : key2;
+      var keyMax = key1 > key2 ? key1 : key2;
+
+      for( var i = 0; i < this.notes.length; i++ )
+      {
+        if( this.notes[i].start < barMax && this.notes[i].key < keyMax + 1
+         && this.notes[i].end   > barMin && this.notes[i].key > keyMin + 0 )
+          this.notes[i].selected = true;
+        else
+          this.notes[i].selected = false;
+      }
+    };
+
+  // Notes that are marked as selected by a drag and drop operation should now either (a) replace the existing active set of notes or (b) exclusively union with the already activated notes (if shift is held down)
+  PianoRoll.prototype.activateSelectedNotes = function()
+    {
+      for( var i = 0; i < this.notes.length; i++ )
+      {
+        this.notes[i].active = key.shift && (this.notes[i].active ^ this.notes[i].selected) || (key.shift == false && this.notes[i].selected);
+        this.notes[i].selected  = false;
+      }
     };
 
   // ------------------------------------------------------------------------
@@ -472,7 +514,8 @@ var PIANO = (function(){
         this.canvasContext.lineWidth   = 1.0;
         this.canvasContext.setLineDash([]);
 
-        if( this.notes[i].active )
+        // Show the impending state of note selection
+        if( key.shift && (this.notes[i].active ^ this.notes[i].selected) || (key.shift == false && (this.notes[i].selected || this.notes[i].active)) )
         {
           var previewNote = {};
               previewNote.start = params && params.startDelta ? this.notes[i].start + params.startDelta : this.notes[i].start;

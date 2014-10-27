@@ -267,6 +267,8 @@ var PIANO = (function(){
     // ------------------------------------------------------------------------
     key('del', function(){ 
       that.deleteActiveKeys();
+      that.renderFreshGrid();
+      that.renderNotes();
       return false;
     });
 

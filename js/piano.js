@@ -107,7 +107,8 @@ var PIANO = (function(){
     // ------------------------------------------------------------------------
     // Drag and Drop of grips
     // ------------------------------------------------------------------------
-    var startEvent = null;
+    var startEvent  = null;
+    var currentNote = null;
     var gripHandler = function (e)
       {
         startEvent = e;
@@ -115,12 +116,12 @@ var PIANO = (function(){
         // Figure out which note (if any) is being gripped?
         var timePosition = that.xCoordToBar( e.clientX - that.canvas.clientXYDirectional('x') );
         var  keyPosition = that.yCoordToKey( e.clientY - that.canvas.clientXYDirectional('y') );
-        var  activeNote  = that.getHoveredNote(timePosition, keyPosition);
-        that.isDragging  = that.getHoverAction(timePosition, activeNote);
+        currentNote      = that.getHoveredNote(timePosition, keyPosition);
+        that.isDragging  = that.getHoverAction(timePosition, currentNote);
 
         // If we're dragging an inactive note, make it active!
-        if( that.isDragging != 'select' || activeNote && ! activeNote.active )
-          that.setActiveNotes(activeNote, key.shift);
+        if( that.countActiveNotes() == 0 && that.isDragging != 'select' || currentNote && ! currentNote.active )
+          that.setActiveNotes(currentNote, key.shift);
 
         // Set the cursor if necessary
         switch( that.isDragging )
@@ -131,6 +132,10 @@ var PIANO = (function(){
           case 'select':
           default:
         }
+
+        // Re-render
+        that.renderFreshGrid();
+        that.renderNotes();
       };
     var dragHandler = function (e)
       {
@@ -144,7 +149,7 @@ var PIANO = (function(){
           case 'mid':
             noteChanges.keyDelta   = that.pixelsToKey( e.clientY - startEvent.clientY );
             noteChanges.startDelta = that.pixelsToBar( e.clientX - startEvent.clientX );
-            noteChanges.endDelta   = noteChanges.startDelta
+            noteChanges.endDelta   = noteChanges.startDelta;
             break;
           case 'min':
             noteChanges.startDelta = that.pixelsToBar( e.clientX - startEvent.clientX );
@@ -159,6 +164,7 @@ var PIANO = (function(){
         }
 
         // Draw the notes accordingly
+        noteChanges = that.snapNoteChanges( noteChanges, currentNote );
         that.renderNotes(noteChanges);
         if( showSelectionBox )
           that.renderSelectionBox(startEvent, e);
@@ -187,6 +193,7 @@ var PIANO = (function(){
 
         // Update the state
         that.isDragging = false;
+        noteChanges = that.snapNoteChanges( noteChanges, currentNote );
         that.applyChangesToActiveNotes(noteChanges);
         that.renderFreshGrid();
         that.renderNotes();
@@ -370,35 +377,50 @@ var PIANO = (function(){
           if( params.startDelta ) this.notes[i].start += params.startDelta;
           if( params.keyDelta   ) this.notes[i].key   += params.keyDelta;
           if( params.endDelta   ) this.notes[i].end   += params.endDelta;
-          this.quantizeNote( this.notes[i], params );
         }
       }
     };
 
-  // TODO comment
-  PianoRoll.prototype.quantizeNote = function(note, params)
+  // Takes a target note and a note delta and adjusts the delta to snap to the closest snap points
+  // delta should be an object of the form:  { startDelta: X.XXX, endDelta: Y.YYY, keyDelta: Z.ZZZ }
+  // TODO: Make standardized objects for Notes and note deltas.
+  PianoRoll.prototype.snapNoteChanges = function(delta, targetNote)
     {
-      // Always need to quantize the key
-      note.key = Math.round( note.key );
+      if( ! targetNote )
+        return delta;
+
+      // Key change is always integer
+      delta.keyDelta = Math.round( delta.keyDelta );
 
       // User can press alt to bypass quantization aka "snap"!
-      if( key.alt ) return note;
+      if( key.alt ) return delta;
 
       // Both Start/End deltas => note being dragged from mid grip => ensure equal quantization
-      if( params && params.startDelta && params.endDelta )
+      if( delta.startDelta && delta.endDelta )
       {
-        var newStart = Math.round( note.start * 16 ) * 0.0625;
-        var quantizationAmount = newStart - note.start ;
-        note.start = newStart;
-        note.end += quantizationAmount;
-        return note;
+        delta.startDelta = delta.endDelta = this.snapIndividualValue( delta.startDelta, targetNote.start );
+        return delta;
       }
 
       // Individual ends - Snap the start and endpoints to the grid
-      if( params && params.startDelta ) note.start = Math.round( note.start * 16 ) * 0.0625;
-      if( params && params.endDelta   ) note.end   = Math.round( note.end   * 16 ) * 0.0625;
-      return note;
+      if( delta.startDelta ) delta.startDelta = this.snapIndividualValue( delta.startDelta, targetNote.start );
+      if( delta.endDelta   ) delta.endDelta   = this.snapIndividualValue( delta.endDelta  , targetNote.end   );
+      return delta;
     };
+
+  // Snap an individual grip either to the next unit distance or to the closes gridline
+  PianoRoll.prototype.snapIndividualValue = function(delta, value)
+    {
+        var quantizedDelta  = Math.round(          delta  * 8 ) * 0.125; // Snap to the closest 1 unit delta
+        var quantizedResult = Math.round( (value + delta) * 8 ) * 0.125; // Snap to the closest gridline
+
+        // Snap to the closest 1 unit delta
+        if( Math.abs( quantizedDelta - delta ) < Math.abs( quantizedResult - value - delta ) )
+          return quantizedDelta;
+        // Snap to the closest gridline
+        else
+          return quantizedResult - value;
+    }
 
   // Given a 2 mouse events, set all the notes intersecting the resultant bounding box as selected
   PianoRoll.prototype.selectNotesInBoundingBox = function(startEvent, endEvent)
@@ -430,6 +452,16 @@ var PIANO = (function(){
         this.notes[i].active = key.shift && (this.notes[i].active ^ this.notes[i].selected) || (key.shift == false && this.notes[i].selected);
         this.notes[i].selected  = false;
       }
+    };
+
+  // Counts the total number of notes marked as active
+  PianoRoll.prototype.countActiveNotes = function()
+    {
+      var total = 0;
+      for( var i in this.notes )
+        if( this.notes[i].active )
+          total++;
+      return total;
     };
 
   // Deletes all notes marked as active
@@ -536,8 +568,6 @@ var PIANO = (function(){
               previewNote.start = params && params.startDelta ? this.notes[i].start + params.startDelta : this.notes[i].start;
               previewNote.key   = params && params.keyDelta   ? this.notes[i].key   + params.keyDelta   : this.notes[i].key;
               previewNote.end   = params && params.endDelta   ? this.notes[i].end   + params.endDelta   : this.notes[i].end;
-          if( params && ( params.keyDelta || params.startDelta || params.endDelta ) )
-            this.quantizeNote(previewNote, params);
           this.canvasContext.strokeStyle = "#401";
           this.canvasContext.fillStyle   = "#812";
           this.renderSingleNote( previewNote );

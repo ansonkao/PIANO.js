@@ -597,16 +597,18 @@ var PIANO = (function(){
   // The selection box that appears when you click drag with the mouse
   PianoRoll.prototype.renderSelectionBox = function(startEvent, endEvent)
     {
+      var x0 = Math.closestHalfPixel( startEvent.clientX - this.canvas.clientXYDirectional('x') );
+      var y0 = Math.closestHalfPixel( startEvent.clientY - this.canvas.clientXYDirectional('y') );
+      var width  = Math.round( endEvent.clientX - startEvent.clientX );
+      var height = Math.round( endEvent.clientY - startEvent.clientY );
       this.canvasContext.beginPath();
       this.canvasContext.lineWidth   = 1.0;
-      this.canvasContext.strokeStyle = "#000";
-      this.canvasContext.setLineDash([2,4]);
-      this.canvasContext.strokeRect
-        ( Math.closestHalfPixel( startEvent.clientX - this.canvas.clientXYDirectional('x') )
-        , Math.closestHalfPixel( startEvent.clientY - this.canvas.clientXYDirectional('y') )
-        , Math.round( endEvent.clientX - startEvent.clientX )
-        , Math.round( endEvent.clientY - startEvent.clientY )
-        );
+    //this.canvasContext.setLineDash([1,2]);
+    //this.canvasContext.lineDashOffset++; // Marching Ants effect
+      this.canvasContext.strokeStyle = "rgba(0,0,0,0.5)";
+      this.canvasContext.fillStyle = "rgba(64,64,64,0.125)";
+      this.canvasContext.fillRect(x0, y0, width, height);
+      this.canvasContext.strokeRect(x0, y0, width, height);
       this.canvasContext.stroke();
       this.canvasContext.setLineDash([]);
     };

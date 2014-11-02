@@ -292,6 +292,34 @@ var PIANO = (function(){
       that.renderNotes();
       return false;
     });
+    key('up', function(){ 
+      var noteChanges = {keyDelta: 1};
+      that.applyChangesToActiveNotes(noteChanges);
+      that.renderFreshGrid();
+      that.renderNotes();
+      return false;
+    });
+    key('down', function(){ 
+      var noteChanges = {keyDelta: -1};
+      that.applyChangesToActiveNotes(noteChanges);
+      that.renderFreshGrid();
+      that.renderNotes();
+      return false;
+    });
+    key('left', function(){ 
+      var noteChanges = {startDelta: -0.25, endDelta: -0.25};
+      that.applyChangesToActiveNotes(noteChanges);
+      that.renderFreshGrid();
+      that.renderNotes();
+      return false;
+    });
+    key('right', function(){ 
+      var noteChanges = {startDelta: 0.25, endDelta: 0.25};
+      that.applyChangesToActiveNotes(noteChanges);
+      that.renderFreshGrid();
+      that.renderNotes();
+      return false;
+    });
 
     // TODO - this is super buggy...
     //key('alt', function(){

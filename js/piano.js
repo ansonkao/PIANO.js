@@ -1,3 +1,11 @@
+/* Planned refactor to allow only a single PianoRoll:
+ * 
+ * PianoRoll.init()
+ * PianoRoll.setPlayHead()
+ * PianoRoll.setNotes()
+ */
+
+
 var PIANO = (function(){
 
   var containerStack = [];
@@ -81,6 +89,9 @@ var PIANO = (function(){
     this.isDragging    = false;
     this.isHovering    = false;
 
+    // TODO: Snap Threshold (3px etc... used for snap, distinguishing between click and drag and drop)
+    // TODO: Gridline Unit (1/4 note, 1/8th note, etc... used for keyboard left/right commands and drawing gridlines)
+
     // ------------------------------------------------------------------------
     // Construction of each PianoRoll instance
     // ------------------------------------------------------------------------
@@ -119,8 +130,11 @@ var PIANO = (function(){
         currentNote      = that.getHoveredNote(timePosition, keyPosition);
         that.isDragging  = that.getHoverAction(timePosition, currentNote);
 
-        // If we're dragging an inactive note, make it active!
-        if( that.countActiveNotes() == 0 && that.isDragging != 'select' || currentNote && ! currentNote.active )
+        // Update the currently selected notes
+        if( that.countActiveNotes() == 0 && that.isDragging != 'select' // No existing selection, clicked on a new note
+         || currentNote && ! currentNote.active                         // Clicked on an inactive note
+         || that.isDragging == 'select' && key.shift == false           // Click+drag without holding shift for unioning to the existing selection
+         )
           that.setActiveNotes(currentNote, key.shift);
 
         // Set the cursor if necessary

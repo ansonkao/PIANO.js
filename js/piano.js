@@ -8,11 +8,182 @@
 
 var PIANO = (function(){
 
+  var $ = { router:     {}
+          , controller: {}
+          , model:      {}
+          , view:       {}
+          };
+
+  // ==========================================================================
+  // ROUTER
+  // ==========================================================================
+  $.router.mouseMove  = function(){};
+  $.router.mouseHover = function(){};
+  $.router.mouseDrag  = function(){};
+  $.router.mouseClick = function(){};
+  $.router.keyPress   = function(){};
+  $.router.midiEvent  = function(){};
+  $.router.gripscroll = function()
+    {
+      // Update viewport upon scroll
+      $.model.container.addEventListener('gripscroll-update', function (e){
+        $.controller.setViewport( e.gripScrollX.min, e.gripScrollX.max, e.gripScrollY.min, e.gripScrollY.max );
+      });
+    };
+
+  // ==========================================================================
+  // CONTROLLER
+  // ==========================================================================
+  $.controller.createNote   = function(){};
+  $.controller.modifyNotes  = function(){};
+  $.controller.selectArea   = function(){};
+  $.controller.setViewport  = function(timeScaleMin, timeScaleMax, keyScaleMin, keyScaleMax)
+    {
+      // Update Viewport params
+      $.model.timeScale.min = timeScaleMin;
+      $.model.timeScale.max = timeScaleMax;
+      $.model.keyScale.min  = keyScaleMin;
+      $.model.keyScale.max  = keyScaleMax;
+
+      // Redraw
+      $.view.renderFreshGrid();
+      $.view.renderNotes();
+    };
+  $.controller.setStartHead = function(){};
+  $.controller.setPlayHead  = function(){};
+  $.controller.setCursor    = function(){};
+
+  // ==========================================================================
+  // MODEL
+  // ==========================================================================
+  $.model.container     = null;
+  $.model.canvas        = null;
+  $.model.canvasContext = null;
+  $.model.keyboardSize  = 88;    // 88 keys in a piano
+  $.model.clipLength    = 16;    // ...in bars. 2.125 means 2 bars and 1/8th note long
+  $.model.width         = null;
+  $.model.height        = null;
+  $.model.timeScale     = { min: 0.500, max: 1.000 };
+  $.model.keyScale      = { min: 0.000, max: 1.000 };
+  $.model.notes         = null;
+  $.model.isDragging    = false;
+  $.model.isHovering    = false;
+  $.model.initialize    = function(container, params)
+    {
+      // Canvas
+      $.model.container        = container;
+      $.model.canvas           = container.appendChild( document.createElement('canvas') );
+      $.model.canvas.className = 'piano-canvas';
+      $.model.canvasContext    = $.model.canvas.getContext("2d");
+
+      // Notes
+      $.model.notes = params.notes;
+
+      // Routes
+      $.router.gripscroll();
+    };
+  $.model.resize        = function()
+    {
+      // Reset dimensions
+      $.model.canvas.width  = $.model.width  = $.model.container.clientWidth;
+      $.model.canvas.height = $.model.height = $.model.container.clientHeight;
+        /* ^ clientWidth/clientHeight return rounded integer value from the parent
+         * wrapper. If we use getBoundingClientRect() instead, we'll get non-integer
+         * values and the discrepancy will lead to sub-pixel blending and fuzzy lines.
+         */ 
+    };
+  $.model.getTimeRange  = function(){ return $.model.timeScale.max - $.model.timeScale.min; };
+  $.model.getKeyRange   = function(){ return $.model.keyScale.max  - $.model.keyScale.min;  };
+  $.model.percentToKey  = function(percent){ return Math.ceil( percent * $.model.keyboardSize ); }; // Where percent is between 0.000 and 1.000
+  $.model.percentToBar  = function(percent){ return Math.ceil( percent * $.model.clipLength   ); }; // Where percent is between 0.000 and 1.000
+  $.model.barToPixels   = function(bar){ return ( ( bar / $.model.clipLength   )                         ) / $.model.getTimeRange() * $.model.width  };
+  $.model.keyToPixels   = function(key){ return ( ( key / $.model.keyboardSize )                         ) / $.model.getKeyRange()  * $.model.height };
+  $.model.barToXCoord   = function(bar){ return ( ( bar / $.model.clipLength   ) - $.model.timeScale.min ) / $.model.getTimeRange() * $.model.width  };
+  $.model.keyToYCoord   = function(key){ return ( ( key / $.model.keyboardSize ) - $.model.keyScale.min  ) / $.model.getKeyRange()  * $.model.height };
+  $.model.pixelsToBar   = function(pixels){ return (          ( pixels ) / $.model.width * $.model.getTimeRange()                          ) * $.model.clipLength;   };
+  $.model.pixelsToKey   = function(pixels){ return (  0.0 - ( ( pixels ) / $.model.height * $.model.getKeyRange()                        ) ) * $.model.keyboardSize; };
+  $.model.xCoordToBar   = function(xCoord){ return (          ( xCoord ) / $.model.width * $.model.getTimeRange() + $.model.timeScale.min  ) * $.model.clipLength;   };
+  $.model.yCoordToKey   = function(yCoord){ return (  1.0 - ( ( yCoord ) / $.model.height * $.model.getKeyRange() + $.model.keyScale.min ) ) * this.keyboardSize; };
+
+  // ==========================================================================
+  // VIEW
+  // ==========================================================================
+  $.view.renderFreshGrid  = function()
+    {
+      // Render a plain pianoroll
+      $.model.canvasContext.clear();
+      $.model.canvasContext.backgroundFill('#EEEEEE');
+
+      // Render it!
+      $.view.renderKeyScale();
+      $.view.renderTimeScale();
+    };
+  $.view.renderKeyScale   = function()
+    {
+      // Styles
+      $.model.canvasContext.lineWidth   = 1.0;
+      $.model.canvasContext.setLineDash([]);
+      $.model.canvasContext.strokeStyle = "#D4D4E0";
+      $.model.canvasContext.fillStyle   = "#DDDDE4";
+
+      // Each edge + black key fills
+      for( var key  = $.model.percentToKey( $.model.keyScale.min )
+         ;     key <= $.model.percentToKey( $.model.keyScale.max )
+         ;     key++
+         )
+      {
+        var prevEdge = Math.closestHalfPixel( $.model.keyToYCoord( key - 1 ) );
+        var nextEdge = Math.closestHalfPixel( $.model.keyToYCoord( key     ) );
+
+        // Stroke the edge between rows
+        if( prevEdge > 0.5 ) // Skip first edge (we have a border to serve that purpose)
+          $.model.canvasContext.drawLine( 0, prevEdge, $.model.width, prevEdge, false );
+console.log( 'A!', key, prevEdge > 0.5, $.model.keyToYCoord( key - 1 ), prevEdge );
+
+        // Fill the row for the black keys
+        if( key % 12 in {3:true, 5:true, 7:true, 10:true, 0:true} )
+          $.model.canvasContext.fillRect( 0, nextEdge, $.model.width, prevEdge - nextEdge );
+      }
+
+      // Stroke it all at the end!
+      $.model.canvasContext.stroke();
+    };
+  $.view.renderTimeScale  = function()
+    {
+      // Styles
+      $.model.canvasContext.lineWidth = 1.0;
+      key.alt ? $.model.canvasContext.setLineDash([2,4]) : $.model.canvasContext.setLineDash([]);
+
+      // Draw lines for each beat
+      for( var bar  = $.model.percentToBar( $.model.timeScale.min ) - 1
+         ;     bar <  $.model.percentToBar( $.model.timeScale.max )
+         ;     bar += 0.25
+         )
+      {
+        // Start each line as a separate path (different colors)
+        $.model.canvasContext.beginPath();
+        $.model.canvasContext.strokeStyle = ( bar % 1 ) ? "#CCD" : "#AAB";
+
+        var xPosition = Math.closestHalfPixel( $.model.barToXCoord( bar ) );
+        $.model.canvasContext.drawLine( xPosition, 0, xPosition, $.model.height );
+
+        // Draw each line (different colors)
+        $.model.canvasContext.stroke();
+      }
+    };
+  $.view.renderNotes      = function(){};
+  $.view.renderSingleNote = function(){};
+  $.view.renderSelectBox  = function(){};
+
+  return { add: $.model.initialize
+         };
+
+})();
+/*
   var containerStack = [];
   var pianoRollStack = [];
 
-  /* Initializes a new PianoRoll around the specified container
-   */
+  // Initializes a new PianoRoll around the specified container
   var add = function(container, params)
     {
       // If this container was already added previously, skip
@@ -59,9 +230,9 @@ var PIANO = (function(){
   // ==========================================================================
   // PianoRoll definition
   // ==========================================================================
-  /* A canvas which renders the appearance of a piano-roll/note-sequencer,
-   * and handles mouse interactions.
-   */
+  // A canvas which renders the appearance of a piano-roll/note-sequencer,
+  // and handles mouse interactions.
+  //
   function PianoRoll(container, params)
   {
     // ------------------------------------------------------------------------
@@ -523,10 +694,10 @@ var PIANO = (function(){
       // Reset dimensions
       this.canvas.width  = this.width  = this.container.clientWidth;
       this.canvas.height = this.height = this.container.clientHeight;
-        /* ^ clientWidth/clientHeight return rounded integer value from the parent
-         * wrapper. If we use getBoundingClientRect() instead, we'll get non-integer
-         * values and the discrepancy will lead to sub-pixel blending and fuzzy lines.
-         */ 
+        // ^ clientWidth/clientHeight return rounded integer value from the parent
+        // wrapper. If we use getBoundingClientRect() instead, we'll get non-integer
+        // values and the discrepancy will lead to sub-pixel blending and fuzzy lines.
+        // 
     };
   
   // Render the entire canvas
@@ -664,3 +835,4 @@ var PIANO = (function(){
          };
 
 })();
+/**/

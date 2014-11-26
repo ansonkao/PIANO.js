@@ -5,7 +5,7 @@ var Transport = (function(){
   var bpm = 105;
   var ctx = new AudioContext();
   var masterVolume = ctx.createGain();
-
+  var stopRequested = false;
   // Initialize everything;
   masterVolume.connect( ctx.destination );
   masterVolume.gain.value = 0.25;
@@ -25,9 +25,11 @@ var Transport = (function(){
       return time * 120 / bpm + ctx.currentTime;
     };
 
-  var createOscillator = function( key, start, end )
+  var createOscillator = function( key, start, end, intensity )
     {
       var oscillator = ctx.createOscillator();
+      if(intensity >= 0.0 && intensity <= 1.0)
+      	masterVolume.gain.value = intensity;
       oscillator.connect( masterVolume );
       oscillator.type = 'square';
       oscillator.frequency.value = keyFrequency[ key ];
@@ -38,15 +40,22 @@ var Transport = (function(){
   var play = function()
     {
       var notes = PIANO.getNotes( target );
-
+	  stopRequested = false;
       for( var i in notes )
       {
-        createOscillator( notes[i].key, notes[i].start, notes[i].end );
+        if(stopRequested === false)
+        {
+	        //stopRequested = false;
+
+    	
+        	createOscillator( notes[i].key, notes[i].start, notes[i].end, notes[i].intensity );
+        }
       }
     };
 
   var stop = function()
     {
+      stopRequested = true;
       // TODO
     };
 

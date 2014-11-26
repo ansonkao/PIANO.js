@@ -616,8 +616,10 @@ var PIANO = (function(){
         }
         else
         {
+          var baseIntensityColor = 156;
+          var fillIntensity = Math.floor( ( 1 - this.notes[i].intensity ) * ( 255 - baseIntensityColor ) + baseIntensityColor ).toString(16)  ;
           this.canvasContext.strokeStyle = "#812";
-          this.canvasContext.fillStyle   = "#F24";
+          this.canvasContext.fillStyle   = "#" + fillIntensity + "0000";
           this.renderSingleNote( this.notes[i] );
         }
 

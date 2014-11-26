@@ -70,6 +70,7 @@ var PIANO = (function(){
     // DOM element references
     this.container     = container;
     this.canvas        = container.appendChild( document.createElement('canvas') );
+    this.intensityInput = document.getElementById('note_intensity');
     this.canvas.className = 'piano-canvas';
     this.canvasContext = this.canvas.getContext("2d");
 
@@ -114,7 +115,27 @@ var PIANO = (function(){
       that.renderFreshGrid();
       that.renderNotes();
     });
-
+	
+	// ------------------------------------------------------------------------
+	// Handling Intensity Change Event
+	// ------------------------------------------------------------------------
+	this.intensityInput.addEventListener("change", function (e){
+		if(that.intensityInput.value < 0 || that.intensityInput.value > 100)
+		{
+			return;
+		}
+		for( var i = 0; i < that.notes.length; i++ )
+      	{
+      		if(that.notes[i].active === true || that.notes[i].selected === true )
+      		{             	      	             	
+				that.notes[i].intensity = that.intensityInput.value / 100.00;
+      		}
+      	}
+      	
+      	that.renderNotes();
+	
+	});
+	
     // ------------------------------------------------------------------------
     // Drag and Drop of grips
     // ------------------------------------------------------------------------
@@ -377,6 +398,11 @@ var PIANO = (function(){
   // Set the specified notes as active (being interacted with by the mouse)
   PianoRoll.prototype.setActiveNotes = function(notes, union)
     {
+       var intensityTotal = 0;
+       var averageIntensity = 0.5;
+       var numActiveNotes = 0;
+
+
       // If no notes supplied, simply clear and leave
       if( ! notes )
       {
@@ -397,6 +423,24 @@ var PIANO = (function(){
         // Toggle the state of the note
         notes[i].active = !( notes[i].active );
       }
+
+      // Update Intensity Average
+      for( var i = 0; i < notes.length; i++ )
+      {
+      	if(notes[i].active === true)
+      	{             	      	             	
+      		intensityTotal += notes[i].intensity;
+      		numActiveNotes ++;
+      	}
+      }
+      
+      if(numActiveNotes > 0)
+      {
+      	averageIntensity =  intensityTotal / numActiveNotes;
+      	this.intensityInput.value = Math.floor(averageIntensity * 100 );
+
+      }
+      
     };
 
   // Clear all the active notes (nothing being interacted with by the mouse)
@@ -475,15 +519,29 @@ var PIANO = (function(){
       var barMax = bar1 > bar2 ? bar1 : bar2;
       var keyMin = key1 < key2 ? key1 : key2;
       var keyMax = key1 > key2 ? key1 : key2;
+      var intensityTotal = 0;
+      var averageIntensity = 0.5;
+      var numActiveNotes = 0;
 
       for( var i = 0; i < this.notes.length; i++ )
       {
         if( this.notes[i].start < barMax && this.notes[i].key < keyMax + 1
          && this.notes[i].end   > barMin && this.notes[i].key > keyMin + 0 )
+         {
           this.notes[i].selected = true;
+          numActiveNotes ++;
+          intensityTotal += this.notes[i].intensity;
+         }
         else
           this.notes[i].selected = false;
       }
+      
+      if(numActiveNotes > 0)
+      {
+      	averageIntensity = intensityTotal / numActiveNotes;
+      	this.intensityInput.value = Math.floor(averageIntensity * 100 );
+      }
+      
     };
 
   // Notes that are marked as selected by a drag and drop operation should now either (a) replace the existing active set of notes or (b) exclusively union with the already activated notes (if shift is held down)
@@ -611,12 +669,12 @@ var PIANO = (function(){
               previewNote.key   = params && params.keyDelta   ? this.notes[i].key   + params.keyDelta   : this.notes[i].key;
               previewNote.end   = params && params.endDelta   ? this.notes[i].end   + params.endDelta   : this.notes[i].end;
           this.canvasContext.strokeStyle = "#401";
-          this.canvasContext.fillStyle   = "#812";
+          this.canvasContext.fillStyle   = "#FFFFFF";
           this.renderSingleNote( previewNote );
         }
         else
         {
-          var baseIntensityColor = 156;
+          var baseIntensityColor = 100;
           var fillIntensity = Math.floor( ( 1 - this.notes[i].intensity ) * ( 255 - baseIntensityColor ) + baseIntensityColor ).toString(16)  ;
           this.canvasContext.strokeStyle = "#812";
           this.canvasContext.fillStyle   = "#" + fillIntensity + "0000";

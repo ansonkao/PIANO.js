@@ -23,7 +23,8 @@ module.exports = function(grunt) {
           ]
         },
         options: {
-          beautify: true
+          beautify: true,
+          mangle: false
         }
       }
     },

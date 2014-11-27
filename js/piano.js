@@ -40,6 +40,7 @@ var PIANO = (function(){
   $.controller.setViewport  = function(timeScaleMin, timeScaleMax, keyScaleMin, keyScaleMax)
     {
       // Update Viewport params
+      $.model.resize();
       $.model.timeScale.min = timeScaleMin;
       $.model.timeScale.max = timeScaleMax;
       $.model.keyScale.min  = keyScaleMin;
@@ -138,7 +139,6 @@ var PIANO = (function(){
         // Stroke the edge between rows
         if( prevEdge > 0.5 ) // Skip first edge (we have a border to serve that purpose)
           $.model.canvasContext.drawLine( 0, prevEdge, $.model.width, prevEdge, false );
-console.log( 'A!', key, prevEdge > 0.5, $.model.keyToYCoord( key - 1 ), prevEdge );
 
         // Fill the row for the black keys
         if( key % 12 in {3:true, 5:true, 7:true, 10:true, 0:true} )

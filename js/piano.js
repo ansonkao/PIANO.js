@@ -19,7 +19,107 @@ var PIANO = (function(){
   // ==========================================================================
   $.router.mouseMove  = function(){};
   $.router.mouseHover = function(){};
-  $.router.mouseDrag  = function(){};
+  $.router.mouseDrag  = function()
+    {
+      var startEvent  = null;
+      var currentNote = null;
+      var isDragging  = null;
+      var gripHandler = function (e)
+        {
+          startEvent = e;
+
+          // Figure out which note (if any) is being gripped?
+          var timePosition   = $.model.xCoordToBar( e.clientX - $.model.canvas.clientXYDirectional('x') );
+          var  keyPosition   = $.model.yCoordToKey( e.clientY - $.model.canvas.clientXYDirectional('y') );
+          currentNote        = $.model.getHoveredNote(timePosition, keyPosition);
+          $.model.isDragging = $.model.getHoverAction(timePosition, currentNote);
+
+          // Update the currently selected notes
+          if( $.model.countActiveNotes() == 0 && isDragging != 'select' // No existing selection, clicked on a new note
+           || currentNote && ! currentNote.active                       // Clicked on an inactive note
+           || isDragging == 'select' && key.shift == false              // Click+drag without holding shift for unioning to the existing selection
+           )
+            $.model.setActiveNotes(currentNote, key.shift);
+
+          // Set the cursor if necessary
+          switch( $.model.isDragging )
+          {
+            case 'mid': CurseWords.setExplicitCursor('grabbing'); break;
+            case 'min':
+            case 'max': CurseWords.setExplicitCursor('xresize');  break;
+            case 'select':
+            default:
+          }
+
+          // Re-render
+          $.view.renderFreshGrid();
+          $.view.renderNotes();
+        };
+      var dragHandler = function (e)
+        {
+          $.view.renderFreshGrid();
+
+          // Decide how to draw notes based on what action is currently occurring
+          var noteChanges = {};
+          var showSelectionBox = false;
+          switch( $.model.isDragging )
+          {
+            case 'mid':
+              noteChanges.keyDelta   = $.model.pixelsToKey( e.clientY - startEvent.clientY );
+              noteChanges.startDelta = $.model.pixelsToBar( e.clientX - startEvent.clientX );
+              noteChanges.endDelta   = noteChanges.startDelta;
+              break;
+            case 'min':
+              noteChanges.startDelta = $.model.pixelsToBar( e.clientX - startEvent.clientX );
+              break;
+            case 'max':
+              noteChanges.endDelta   = $.model.pixelsToBar( e.clientX - startEvent.clientX );
+              break;
+            case 'select':
+            default:
+              showSelectionBox = true;
+              $.model.selectNotesInBox( startEvent, e );
+          }
+
+          // Draw the notes accordingly
+          noteChanges = $.model.snapNoteChanges( noteChanges, currentNote );
+          $.view.renderNotes(noteChanges);
+          if( showSelectionBox )
+            $.view.renderSelectBox(startEvent, e);
+        };
+      var dropHandler = function (e)
+        {
+          // Determine the final changes to the notes
+          var noteChanges = {};
+          switch( isDragging )
+          {
+            case 'mid':
+              noteChanges.keyDelta   = $.model.pixelsToKey( e.clientY - startEvent.clientY );
+              noteChanges.startDelta = $.model.pixelsToBar( e.clientX - startEvent.clientX );
+              noteChanges.endDelta   = noteChanges.startDelta;
+              break;
+            case 'min':
+              noteChanges.startDelta = $.model.pixelsToBar( e.clientX - startEvent.clientX );
+              break;
+            case 'max':
+              noteChanges.endDelta   = $.model.pixelsToBar( e.clientX - startEvent.clientX );
+              break;
+            case 'select':
+            default:
+              $.model.setActiveNotes( $.model.getSelectedNotes(), key.shift );
+              $.model.clearSelectedNotes();
+          }
+
+          // Update the state
+          isDragging = false;
+          noteChanges = $.model.snapNoteChanges( noteChanges, currentNote );
+          $.model.adjustActiveNotes(noteChanges);
+          $.view.renderFreshGrid();
+          $.view.renderNotes();
+          CurseWords.clearExplicitCursor();
+        };
+      DragKing.addHandler( $.model.canvas, gripHandler, dragHandler, dropHandler );
+    };
   $.router.mouseClick = function(){};
   $.router.keyPress   = function(){};
   $.router.midiEvent  = function(){};
@@ -57,19 +157,19 @@ var PIANO = (function(){
   // ==========================================================================
   // MODEL
   // ==========================================================================
-  $.model.container     = null;
-  $.model.canvas        = null;
-  $.model.canvasContext = null;
-  $.model.keyboardSize  = 88;    // 88 keys in a piano
-  $.model.clipLength    = 16;    // ...in bars. 2.125 means 2 bars and 1/8th note long
-  $.model.width         = null;
-  $.model.height        = null;
-  $.model.timeScale     = { min: 0.500, max: 1.000 };
-  $.model.keyScale      = { min: 0.000, max: 1.000 };
-  $.model.notes         = null;
-  $.model.isDragging    = false;
-  $.model.isHovering    = false;
-  $.model.initialize    = function(container, params)
+  $.model.container           = null;
+  $.model.canvas              = null;
+  $.model.canvasContext       = null;
+  $.model.keyboardSize        = 88;    // 88 keys in a piano
+  $.model.clipLength          = 16;    // ...in bars. 2.125 means 2 bars and 1/8th note long
+  $.model.width               = null;
+  $.model.height              = null;
+  $.model.timeScale           = { min: 0.500, max: 1.000 };
+  $.model.keyScale            = { min: 0.000, max: 1.000 };
+  $.model.notes               = null;
+  $.model.isDragging          = false;
+  $.model.isHovering          = false;
+  $.model.initialize          = function(container, params)
     {
       // Canvas
       $.model.container        = container;
@@ -81,9 +181,10 @@ var PIANO = (function(){
       $.model.notes = params.notes;
 
       // Routes
+      $.router.mouseDrag();
       $.router.gripscroll();
     };
-  $.model.resize        = function()
+  $.model.resize              = function()
     {
       // Reset dimensions
       $.model.canvas.width  = $.model.width  = $.model.container.clientWidth;
@@ -93,18 +194,175 @@ var PIANO = (function(){
          * values and the discrepancy will lead to sub-pixel blending and fuzzy lines.
          */ 
     };
-  $.model.getTimeRange  = function(){ return $.model.timeScale.max - $.model.timeScale.min; };
-  $.model.getKeyRange   = function(){ return $.model.keyScale.max  - $.model.keyScale.min;  };
-  $.model.percentToKey  = function(percent){ return Math.ceil( percent * $.model.keyboardSize ); }; // Where percent is between 0.000 and 1.000
-  $.model.percentToBar  = function(percent){ return Math.ceil( percent * $.model.clipLength   ); }; // Where percent is between 0.000 and 1.000
-  $.model.barToPixels   = function(bar){ return ( ( bar / $.model.clipLength   )                         ) / $.model.getTimeRange() * $.model.width  };
-  $.model.keyToPixels   = function(key){ return ( ( key / $.model.keyboardSize )                         ) / $.model.getKeyRange()  * $.model.height };
-  $.model.barToXCoord   = function(bar){ return ( ( bar / $.model.clipLength   ) - $.model.timeScale.min ) / $.model.getTimeRange() * $.model.width  };
-  $.model.keyToYCoord   = function(key){ return ( ( key / $.model.keyboardSize ) - $.model.keyScale.min  ) / $.model.getKeyRange()  * $.model.height };
-  $.model.pixelsToBar   = function(pixels){ return (          ( pixels ) / $.model.width * $.model.getTimeRange()                          ) * $.model.clipLength;   };
-  $.model.pixelsToKey   = function(pixels){ return (  0.0 - ( ( pixels ) / $.model.height * $.model.getKeyRange()                        ) ) * $.model.keyboardSize; };
-  $.model.xCoordToBar   = function(xCoord){ return (          ( xCoord ) / $.model.width * $.model.getTimeRange() + $.model.timeScale.min  ) * $.model.clipLength;   };
-  $.model.yCoordToKey   = function(yCoord){ return (  1.0 - ( ( yCoord ) / $.model.height * $.model.getKeyRange() + $.model.keyScale.min ) ) * this.keyboardSize; };
+  $.model.getTimeRange        = function(){ return $.model.timeScale.max - $.model.timeScale.min; };
+  $.model.getKeyRange         = function(){ return $.model.keyScale.max  - $.model.keyScale.min;  };
+  $.model.percentToKey        = function(percent){ return Math.ceil( percent * $.model.keyboardSize ); }; // Where percent is between 0.000 and 1.000
+  $.model.percentToBar        = function(percent){ return Math.ceil( percent * $.model.clipLength   ); }; // Where percent is between 0.000 and 1.000
+  $.model.barToPixels         = function(bar){ return ( ( bar / $.model.clipLength   )                         ) / $.model.getTimeRange() * $.model.width  };
+  $.model.keyToPixels         = function(key){ return ( ( key / $.model.keyboardSize )                         ) / $.model.getKeyRange()  * $.model.height };
+  $.model.barToXCoord         = function(bar){ return ( ( bar / $.model.clipLength   ) - $.model.timeScale.min ) / $.model.getTimeRange() * $.model.width  };
+  $.model.keyToYCoord         = function(key){ return ( ( key / $.model.keyboardSize ) - $.model.keyScale.min  ) / $.model.getKeyRange()  * $.model.height };
+  $.model.pixelsToBar         = function(pixels){ return (          ( pixels ) / $.model.width * $.model.getTimeRange()                          ) * $.model.clipLength;   };
+  $.model.pixelsToKey         = function(pixels){ return (  0.0 - ( ( pixels ) / $.model.height * $.model.getKeyRange()                        ) ) * $.model.keyboardSize; };
+  $.model.xCoordToBar         = function(xCoord){ return (          ( xCoord ) / $.model.width * $.model.getTimeRange() + $.model.timeScale.min  ) * $.model.clipLength;   };
+  $.model.yCoordToKey         = function(yCoord){ return (  1.0 - ( ( yCoord ) / $.model.height * $.model.getKeyRange() + $.model.keyScale.min ) ) * $.model.keyboardSize; };
+  $.model.setActiveNotes      = function(notes, union)
+    {
+      if( ! notes ) notes = {};
+      if( ! union ) $.model.clearActiveNotes();             // Remove the previously active notes
+      if( ! Array.isArray(notes) ) notes = [notes];         // Make sure notes is in array form if just 1 note is provided
+
+      // Do the setting of the new notes
+      for( var i = 0; i < notes.length; i++ )               
+      {
+        // Add the new active notes, ONLY if it isn't already there
+        if( $.model.notes.indexOf( notes[i] ) == -1 )
+          $.model.notes.push( notes[i] );
+
+        // Toggle the state of the note
+        notes[i].active = union && !( notes[i].active ) || union == false;
+      }
+    };
+  $.model.adjustActiveNotes   = function(params)
+    {
+      // Saves changes indicated in the params argument to the currently active notes
+      if( ! params ) return;
+
+      for( var i in this.notes )
+      {
+        // Only apply to active notes
+        if( this.notes[i].active )
+        {
+          if( params.startDelta ) this.notes[i].start += params.startDelta;
+          if( params.keyDelta   ) this.notes[i].key   += params.keyDelta;
+          if( params.endDelta   ) this.notes[i].end   += params.endDelta;
+        }
+      }
+    };
+  $.model.countActiveNotes    = function()
+    {
+      var total = 0;
+      for( var i in $.model.notes )
+        if( $.model.notes[i].active )
+          total++;
+      return total;
+    };
+  $.model.deleteActiveKeys    = function()
+    {
+      // Deletes all notes marked as active
+      $.model.notes = $.model.notes.filter( function(el){
+        return el.active == false;
+      });
+    };
+  $.model.clearActiveNotes    = function()
+    {
+      // Clear all the active notes (nothing being interacted with by the mouse)
+      for( var i in this.notes )
+        this.notes[i].active = false;
+    };
+  $.model.getSelectedNotes    = function()
+    {
+      return $.model.notes.filter(function(note){
+        return note.selected;
+      });
+    };
+  $.model.countSelectedNotes  = function()
+    {
+      var total = 0;
+      for( var i in $.model.notes )
+        if( $.model.notes[i].selected )
+          total++;
+      return total;
+    };
+  $.model.clearSelectedNotes  = function()
+    {
+      // Clear all the active notes (nothing being interacted with by the mouse)
+      for( var i in this.notes )
+        this.notes[i].selected = false;
+    };
+  $.model.getHoveredNote      = function(timePositionBars, key)
+    {
+      // Which note is the cursor currently over?
+      for( var i = 0; i < $.model.notes.length; i++ )
+        if( timePositionBars >= $.model.notes[i].start
+         && timePositionBars <= $.model.notes[i].end
+         && $.model.notes[i].key - key < 1
+         && $.model.notes[i].key - key > 0
+        )
+          return $.model.notes[i];
+      return null;
+    };
+  $.model.getHoverAction      = function(timePositionBars, hoveredNote)
+    { 
+      // Based on which part of the note the cursor is hovering over, what action are we about to do?
+      if( ! hoveredNote )
+        return 'select';
+
+           if( $.model.barToPixels(     hoveredNote.end   - hoveredNote.start ) < 15 ) return 'mid';
+      else if( $.model.barToPixels( -1* hoveredNote.start + timePositionBars  ) <  4 ) return 'min';
+      else if( $.model.barToPixels(     hoveredNote.end   - timePositionBars  ) <  4 ) return 'max';
+      else                                                                             return 'mid';
+    };
+  $.model.snapNoteChanges     = function(delta, targetNote)
+    {
+      // Takes a target note and a note delta and adjusts the delta to snap to the closest snap points
+      // delta should be an object of the form:  { startDelta: X.XXX, endDelta: Y.YYY, keyDelta: Z.ZZZ }
+      // TODO: Make standardized objects for Notes and note deltas.
+      if( ! targetNote )
+        return delta;
+
+      // Key change is always integer
+      delta.keyDelta = Math.round( delta.keyDelta );
+
+      // User can press alt to bypass quantization aka "snap"!
+      if( key.alt ) return delta;
+
+      // Both Start/End deltas => note being dragged from mid grip => ensure equal quantization
+      if( delta.startDelta && delta.endDelta )
+      {
+        delta.startDelta = delta.endDelta = this.snapIndividualValue( delta.startDelta, targetNote.start );
+        return delta;
+      }
+
+      // Individual ends - Snap the start and endpoints to the grid
+      if( delta.startDelta ) delta.startDelta = this.snapIndividualValue( delta.startDelta, targetNote.start );
+      if( delta.endDelta   ) delta.endDelta   = this.snapIndividualValue( delta.endDelta  , targetNote.end   );
+      return delta;
+    };
+  $.model.snapIndividualValue = function(delta, value)
+    {
+        // Snap an individual grip either to the next unit distance or to the closes gridline
+        var quantizedDelta  = Math.round(          delta  * 8 ) * 0.125; // Snap to the closest 1 unit delta
+        var quantizedResult = Math.round( (value + delta) * 8 ) * 0.125; // Snap to the closest gridline
+
+        // Snap to the closest 1 unit delta
+        if( Math.abs( quantizedDelta - delta ) < Math.abs( quantizedResult - value - delta ) )
+          return quantizedDelta;
+        // Snap to the closest gridline
+        else
+          return quantizedResult - value;
+    }
+  $.model.selectNotesInBox    = function(startEvent, endEvent)
+    {
+      // Given a 2 mouse events, set all the notes intersecting the resultant bounding box as selected
+      var bar1 = this.xCoordToBar( startEvent.clientX - this.canvas.clientXYDirectional('x') );
+      var key1 = this.yCoordToKey( startEvent.clientY - this.canvas.clientXYDirectional('y') );
+      var bar2 = this.xCoordToBar(   endEvent.clientX - this.canvas.clientXYDirectional('x') );
+      var key2 = this.yCoordToKey(   endEvent.clientY - this.canvas.clientXYDirectional('y') );
+      var barMin = bar1 < bar2 ? bar1 : bar2;
+      var barMax = bar1 > bar2 ? bar1 : bar2;
+      var keyMin = key1 < key2 ? key1 : key2;
+      var keyMax = key1 > key2 ? key1 : key2;
+
+      for( var i = 0; i < this.notes.length; i++ )
+      {
+        if( this.notes[i].start < barMax && this.notes[i].key < keyMax + 1
+         && this.notes[i].end   > barMin && this.notes[i].key > keyMin + 0 )
+          this.notes[i].selected = true;
+        else
+          this.notes[i].selected = false;
+      }
+    };
 
   // ==========================================================================
   // VIEW
@@ -171,9 +429,63 @@ var PIANO = (function(){
         $.model.canvasContext.stroke();
       }
     };
-  $.view.renderNotes      = function(){};
-  $.view.renderSingleNote = function(){};
-  $.view.renderSelectBox  = function(){};
+  $.view.renderNotes      = function(params)
+    {
+      for( var i in $.model.notes )
+      {
+        $.model.canvasContext.beginPath();
+        $.model.canvasContext.lineWidth   = 1.0;
+        $.model.canvasContext.setLineDash([]);
+
+        // Show the impending state of note selection
+        if( key.shift && ($.model.notes[i].active ^ $.model.notes[i].selected)
+         || (key.shift == false && ($.model.notes[i].selected || $.model.notes[i].active))
+          )
+        {
+          var previewNote = {};
+              previewNote.start = params && params.startDelta ? $.model.notes[i].start + params.startDelta : $.model.notes[i].start;
+              previewNote.key   = params && params.keyDelta   ? $.model.notes[i].key   + params.keyDelta   : $.model.notes[i].key;
+              previewNote.end   = params && params.endDelta   ? $.model.notes[i].end   + params.endDelta   : $.model.notes[i].end;
+          $.model.canvasContext.strokeStyle = "#401";
+          $.model.canvasContext.fillStyle   = "#812";
+          $.view.renderSingleNote( previewNote );
+        }
+        else
+        {
+          $.model.canvasContext.strokeStyle = "#812";
+          $.model.canvasContext.fillStyle   = "#F24";
+          $.view.renderSingleNote( $.model.notes[i] );
+        }
+
+        $.model.canvasContext.stroke();
+      }
+    };
+  $.view.renderSingleNote = function(note)
+    {
+      var x1 = Math.closestHalfPixel( $.model.barToXCoord( note.start ) );
+      var x2 = Math.closestHalfPixel( $.model.barToXCoord( note.end   ) );
+      var y1 = Math.closestHalfPixel( $.model.keyToYCoord( $.model.keyboardSize - note.key ) );
+      var y2 = Math.closestHalfPixel( $.model.keyToYCoord( $.model.keyboardSize - note.key  + 1 ) );
+      $.model.canvasContext.fillRect  ( x1 + 1, y1 + 2, x2 - x1 - 3, y2 - y1 - 4 );
+      $.model.canvasContext.strokeRect( x1 + 0, y1 + 1, x2 - x1 - 1, y2 - y1 - 2 );
+    };
+  $.view.renderSelectBox  = function(startEvent,endEvent)
+    {
+      var x0 = Math.closestHalfPixel( startEvent.clientX - $.model.canvas.clientXYDirectional('x') );
+      var y0 = Math.closestHalfPixel( startEvent.clientY - $.model.canvas.clientXYDirectional('y') );
+      var width  = Math.round( endEvent.clientX - startEvent.clientX );
+      var height = Math.round( endEvent.clientY - startEvent.clientY );
+      $.model.canvasContext.beginPath();
+      $.model.canvasContext.lineWidth   = 1.0;
+    //$.model.canvasContext.setLineDash([1,2]);
+    //$.model.canvasContext.lineDashOffset++; // Marching Ants effect
+      $.model.canvasContext.strokeStyle = "rgba(0,0,0,0.5)";
+      $.model.canvasContext.fillStyle = "rgba(64,64,64,0.125)";
+      $.model.canvasContext.fillRect(x0, y0, width, height);
+      $.model.canvasContext.strokeRect(x0, y0, width, height);
+      $.model.canvasContext.stroke();
+      $.model.canvasContext.setLineDash([]);
+    };
 
   return { add: $.model.initialize
          };

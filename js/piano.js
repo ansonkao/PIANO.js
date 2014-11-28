@@ -18,12 +18,50 @@ var PIANO = (function(){
   // ROUTER
   // ==========================================================================
   $.router.mouseMove  = function(){};
-  $.router.mouseHover = function(){};
+  $.router.mouseHover = function()
+    {
+      var enterHandler = function (e)
+        {
+          // This line below is useless at the moment... TODO
+          $.model.isHovering = true;
+        };
+      var hoverHandler = function (e)
+        {
+          if( $.model.isDragging )
+            return null;
+
+          // Figure out which note is hovered over (if any)?
+          var timePosition = $.model.xCoordToBar( e.clientX - $.model.canvas.clientXYDirectional('x') );
+          var  keyPosition = $.model.yCoordToKey( e.clientY - $.model.canvas.clientXYDirectional('y') );
+          var  hoveredNote = $.model.getHoveredNote(timePosition, keyPosition)
+          var  hoverAction = $.model.getHoverAction(timePosition, hoveredNote);
+
+          // Repaint with the hover state
+          $.view.renderFreshGrid();
+          $.view.renderNotes();
+
+          // Set the cursor
+          var newCursor = null;
+          switch( hoverAction )
+          {
+            case 'min': newCursor = 'xresize'; break;
+            case 'max': newCursor = 'xresize'; break;
+            case 'mid': newCursor = 'grab'   ; break;
+               default: newCursor = 'default';
+          }
+          return newCursor;
+        };
+      var exitHandler = function (e)
+        {
+          $.view.renderFreshGrid();
+          $.view.renderNotes();
+        };
+      CurseWords.addImplicitCursorHandler( $.model.canvas, enterHandler, hoverHandler, exitHandler );
+    };
   $.router.mouseDrag  = function()
     {
       var startEvent  = null;
       var currentNote = null;
-      var isDragging  = null;
       var gripHandler = function (e)
         {
           startEvent = e;
@@ -35,9 +73,9 @@ var PIANO = (function(){
           $.model.isDragging = $.model.getHoverAction(timePosition, currentNote);
 
           // Update the currently selected notes
-          if( $.model.countActiveNotes() == 0 && isDragging != 'select' // No existing selection, clicked on a new note
-           || currentNote && ! currentNote.active                       // Clicked on an inactive note
-           || isDragging == 'select' && key.shift == false              // Click+drag without holding shift for unioning to the existing selection
+          if( $.model.countActiveNotes() == 0 && $.model.isDragging != 'select' // No existing selection, clicked on a new note
+           || currentNote && ! currentNote.active                               // Clicked on an inactive note
+           || $.model.isDragging == 'select' && key.shift == false              // Click+drag without holding shift for unioning to the existing selection
            )
             $.model.setActiveNotes(currentNote, key.shift);
 
@@ -91,7 +129,7 @@ var PIANO = (function(){
         {
           // Determine the final changes to the notes
           var noteChanges = {};
-          switch( isDragging )
+          switch( $.model.isDragging )
           {
             case 'mid':
               noteChanges.keyDelta   = $.model.pixelsToKey( e.clientY - startEvent.clientY );
@@ -111,7 +149,7 @@ var PIANO = (function(){
           }
 
           // Update the state
-          isDragging = false;
+          $.model.isDragging = false;
           noteChanges = $.model.snapNoteChanges( noteChanges, currentNote );
           $.model.adjustActiveNotes(noteChanges);
           $.view.renderFreshGrid();
@@ -181,8 +219,8 @@ var PIANO = (function(){
       $.model.notes = params.notes;
 
       // Routes
-      $.router.mouseDrag();
-      $.router.gripscroll();
+      for( var route in $.router )
+        $.router[route]();
     };
   $.model.resize              = function()
     {
@@ -487,7 +525,8 @@ var PIANO = (function(){
       $.model.canvasContext.setLineDash([]);
     };
 
-  return { add: $.model.initialize
+  return { initialize:    $.model.initialize
+         , getAllNotes:   function(){ return $.model.notes; }
          };
 
 })();

@@ -37,7 +37,7 @@ var Transport = (function(){
 
   var play = function()
     {
-      var notes = PIANO.getNotes( target );
+      var notes = PIANO.getAllNotes();
 
       for( var i in notes )
       {

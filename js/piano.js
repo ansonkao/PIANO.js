@@ -17,8 +17,8 @@ var PIANO = (function(){
   // ==========================================================================
   // ROUTER
   // ==========================================================================
-  $.router.mouseMove  = function(){};
-  $.router.mouseHover = function()
+  $.router.mouseMove      = function(){};
+  $.router.mouseHover     = function()
     {
       var enterHandler = function (e)
         {
@@ -51,14 +51,14 @@ var PIANO = (function(){
           }
           return newCursor;
         };
-      var exitHandler = function (e)
+      var exitHandler  = function (e)
         {
           $.view.renderFreshGrid();
           $.view.renderNotes();
         };
       CurseWords.addImplicitCursorHandler( $.model.canvas, enterHandler, hoverHandler, exitHandler );
     };
-  $.router.mouseDrag  = function()
+  $.router.mouseDrag      = function()
     {
       var startEvent  = null;
       var currentNote = null;
@@ -158,10 +158,29 @@ var PIANO = (function(){
         };
       DragKing.addHandler( $.model.canvas, gripHandler, dragHandler, dropHandler );
     };
-  $.router.mouseClick = function(){};
-  $.router.keyPress   = function(){};
-  $.router.midiEvent  = function(){};
-  $.router.gripscroll = function()
+  $.router.mouseClick     = function(){};
+  $.router.windowResize   = function()
+    {
+      // Reinitialize dimensions upon resize
+      window.addEventListener('resize', function (e){
+        $.model.resize();
+      });
+    };
+  $.router.keyPress       = function()
+    {
+      key('ctrl+s', function(){ 
+        for( var i = 0; i < $.model.notes.length; i++ )
+        {
+          console.log( '{ key: '  +$.model.notes[i].key              +
+                       ', start: '+$.model.notes[i].start.toFixed(3) +
+                       ', end: '  +$.model.notes[i].end.toFixed(3)   +' }' );
+        }
+      //console.log( $.model.notes );
+        return false;
+      });
+    };
+  $.router.midiEvent      = function(){};
+  $.router.gripscroll     = function()
     {
       // Update viewport upon scroll
       $.model.container.addEventListener('gripscroll-update', function (e){
@@ -246,15 +265,15 @@ var PIANO = (function(){
   $.model.yCoordToKey         = function(yCoord){ return (  1.0 - ( ( yCoord ) / $.model.height * $.model.getKeyRange() + $.model.keyScale.min ) ) * $.model.keyboardSize; };
   $.model.setActiveNotes      = function(notes, union)
     {
-      if( ! notes ) notes = {};
+      if( ! notes ) notes = [];
       if( ! union ) $.model.clearActiveNotes();             // Remove the previously active notes
       if( ! Array.isArray(notes) ) notes = [notes];         // Make sure notes is in array form if just 1 note is provided
 
       // Do the setting of the new notes
       for( var i = 0; i < notes.length; i++ )               
       {
-        // Add the new active notes, ONLY if it isn't already there
-        if( $.model.notes.indexOf( notes[i] ) == -1 )
+        // Add the new active notes, ONLY if it isn't already there (and if it's an actual note)
+        if( $.model.notes.indexOf( notes[i] ) == -1 && notes[i] )
           $.model.notes.push( notes[i] );
 
         // Toggle the state of the note
@@ -266,21 +285,21 @@ var PIANO = (function(){
       // Saves changes indicated in the params argument to the currently active notes
       if( ! params ) return;
 
-      for( var i in this.notes )
+      for( var i = 0; i < $.model.notes.length; i++ )
       {
         // Only apply to active notes
-        if( this.notes[i].active )
+        if( $.model.notes[i].active )
         {
-          if( params.startDelta ) this.notes[i].start += params.startDelta;
-          if( params.keyDelta   ) this.notes[i].key   += params.keyDelta;
-          if( params.endDelta   ) this.notes[i].end   += params.endDelta;
+          if( params.startDelta ) $.model.notes[i].start += params.startDelta;
+          if( params.keyDelta   ) $.model.notes[i].key   += params.keyDelta;
+          if( params.endDelta   ) $.model.notes[i].end   += params.endDelta;
         }
       }
     };
   $.model.countActiveNotes    = function()
     {
       var total = 0;
-      for( var i in $.model.notes )
+      for( var i = 0; i < $.model.notes.length; i++ )
         if( $.model.notes[i].active )
           total++;
       return total;
@@ -295,7 +314,7 @@ var PIANO = (function(){
   $.model.clearActiveNotes    = function()
     {
       // Clear all the active notes (nothing being interacted with by the mouse)
-      for( var i in this.notes )
+      for( var i = 0; i < $.model.notes.length; i++ )
         this.notes[i].active = false;
     };
   $.model.getSelectedNotes    = function()
@@ -307,7 +326,7 @@ var PIANO = (function(){
   $.model.countSelectedNotes  = function()
     {
       var total = 0;
-      for( var i in $.model.notes )
+      for( var i = 0; i < $.model.notes.length; i++ )
         if( $.model.notes[i].selected )
           total++;
       return total;
@@ -315,7 +334,7 @@ var PIANO = (function(){
   $.model.clearSelectedNotes  = function()
     {
       // Clear all the active notes (nothing being interacted with by the mouse)
-      for( var i in this.notes )
+      for( var i = 0; i < $.model.notes.length; i++ )
         this.notes[i].selected = false;
     };
   $.model.getHoveredNote      = function(timePositionBars, key)
@@ -469,7 +488,7 @@ var PIANO = (function(){
     };
   $.view.renderNotes      = function(params)
     {
-      for( var i in $.model.notes )
+      for( var i = 0; i < $.model.notes.length; i++ )
       {
         $.model.canvasContext.beginPath();
         $.model.canvasContext.lineWidth   = 1.0;
@@ -531,53 +550,6 @@ var PIANO = (function(){
 
 })();
 /*
-  var containerStack = [];
-  var pianoRollStack = [];
-
-  // Initializes a new PianoRoll around the specified container
-  var add = function(container, params)
-    {
-      // If this container was already added previously, skip
-      for( var i = 0; i < containerStack.length; i++ )
-      {
-        if( containerStack[i] == container )
-          return;
-      }
-
-      // Okay let's add it
-      containerStack.push( container );
-      pianoRollStack.push( new PianoRoll( container, params ) );
-    };
-
-  var getNotes = function(container)
-    {
-      // Find the right set of notes based on the container
-      for( var i = 0; i < containerStack.length; i++ )
-      {
-        if( containerStack[i] == container )
-          return pianoRollStack[i].notes;
-      }
-
-      // If we get here, the container is not found
-      return [];
-    };
-
-  key('ctrl+s', function(){ 
-    // Loop through each pianoroll
-    console.log("NOTES: ");
-    for( var i in pianoRollStack )
-    {
-      for( var j in pianoRollStack[i].notes )
-      {
-        console.log( '{ key: '  +pianoRollStack[i].notes[j].key              +
-                     ', start: '+pianoRollStack[i].notes[j].start.toFixed(3) +
-                     ', end: '  +pianoRollStack[i].notes[j].end.toFixed(3)   +' }' );
-      }
-      console.log( pianoRollStack[i].notes );
-    }
-    return false;
-  });
-
   // ==========================================================================
   // PianoRoll definition
   // ==========================================================================
@@ -586,57 +558,6 @@ var PIANO = (function(){
   //
   function PianoRoll(container, params)
   {
-    // ------------------------------------------------------------------------
-    // Members
-    // ------------------------------------------------------------------------
-    // DOM element references
-    this.container     = container;
-    this.canvas        = container.appendChild( document.createElement('canvas') );
-    this.canvas.className = 'piano-canvas';
-    this.canvasContext = this.canvas.getContext("2d");
-
-    // Model
-    this.keyboardSize  = 88;    // 88 keys in a piano
-    this.clipLength    = 16;    // ...in bars. 2.125 means 2 bars and 1/8th note long
-    this.width         = null;
-    this.height        = null;
-    this.timeScale     = { min: 0.500
-                         , max: 1.000
-                         };
-    this.keyScale      = { min: 0.000
-                         , max: 1.000
-                         };
-    this.notes         = params.notes || [];
-
-    this.isDragging    = false;
-    this.isHovering    = false;
-
-    // TODO: Snap Threshold (3px etc... used for snap, distinguishing between click and drag and drop)
-    // TODO: Gridline Unit (1/4 note, 1/8th note, etc... used for keyboard left/right commands and drawing gridlines)
-
-    // ------------------------------------------------------------------------
-    // Construction of each PianoRoll instance
-    // ------------------------------------------------------------------------
-    // Initialize!
-    var that = this;
-        that.init();
-
-    // Reinitialize dimensions upon resize
-    window.addEventListener('resize', function (e){
-      that.init();
-    });
-
-    // Redraw upon scroll
-    container.addEventListener('gripscroll-update', function (e){
-      that.timeScale.min = e.gripScrollX.min;
-      that.timeScale.max = e.gripScrollX.max;
-      that.keyScale.min  = e.gripScrollY.min;
-      that.keyScale.max  = e.gripScrollY.max;
-
-      that.renderFreshGrid();
-      that.renderNotes();
-    });
-
     // ------------------------------------------------------------------------
     // Drag and Drop of grips
     // ------------------------------------------------------------------------

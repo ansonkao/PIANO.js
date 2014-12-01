@@ -46,7 +46,7 @@ var PIANO = (function(){
           {
             case 'min': newCursor = 'xresize'; break;
             case 'max': newCursor = 'xresize'; break;
-            case 'mid': newCursor = 'grab'   ; break;
+            case 'mid': newCursor = 'default'; break;
                default: newCursor = 'default';
           }
           return newCursor;
@@ -60,6 +60,7 @@ var PIANO = (function(){
     };
   $.router.mouseDrag      = function()
     {
+      var dragAction  = null;
       var startEvent  = null;
       var currentNote = null;
       var gripHandler = function (e)
@@ -70,19 +71,12 @@ var PIANO = (function(){
           var timePosition   = $.model.xCoordToBar( e.clientX - $.model.canvas.clientXYDirectional('x') );
           var  keyPosition   = $.model.yCoordToKey( e.clientY - $.model.canvas.clientXYDirectional('y') );
           currentNote        = $.model.getHoveredNote(timePosition, keyPosition);
-          $.model.isDragging = $.model.getHoverAction(timePosition, currentNote);
-
-          // Update the currently selected notes
-          if( $.model.countActiveNotes() == 0 && $.model.isDragging != 'select' // No existing selection, clicked on a new note
-           || currentNote && ! currentNote.active                               // Clicked on an inactive note
-           || $.model.isDragging == 'select' && key.shift == false              // Click+drag without holding shift for unioning to the existing selection
-           )
-            $.model.setActiveNotes(currentNote, key.shift);
+          dragAction         = $.model.getHoverAction(timePosition, currentNote);
 
           // Set the cursor if necessary
-          switch( $.model.isDragging )
+          switch( dragAction )
           {
-            case 'mid': CurseWords.setExplicitCursor('grabbing'); break;
+            case 'mid': CurseWords.setExplicitCursor('default'); break;
             case 'min':
             case 'max': CurseWords.setExplicitCursor('xresize');  break;
             case 'select':
@@ -95,14 +89,25 @@ var PIANO = (function(){
         };
       var dragHandler = function (e)
         {
-          $.view.renderFreshGrid();
+          // Set dragging state only if the cursor actually moves, otherwise it is a click!
+          if( Math.abs( e.clientX - startEvent.clientX ) > 1 || Math.abs( e.clientY - startEvent.clientY ) > 1 )
+            $.model.isDragging = true;  // Share this state to the rest of the app - e.g. hover handler
+
+          // If we begun dragging an inactive note, let's activate it!
+          if( currentNote && $.model.isDragging && !currentNote.active )
+          {
+            if( ! key.shift )
+              $.model.clearActiveNotes();
+            currentNote.active = true;
+          }
 
           // Decide how to draw notes based on what action is currently occurring
           var noteChanges = {};
           var showSelectionBox = false;
-          switch( $.model.isDragging )
+          switch( dragAction )
           {
             case 'mid':
+              CurseWords.setExplicitCursor('grab');
               noteChanges.keyDelta   = $.model.pixelsToKey( e.clientY - startEvent.clientY );
               noteChanges.startDelta = $.model.pixelsToBar( e.clientX - startEvent.clientX );
               noteChanges.endDelta   = noteChanges.startDelta;
@@ -121,6 +126,9 @@ var PIANO = (function(){
 
           // Draw the notes accordingly
           noteChanges = $.model.snapNoteChanges( noteChanges, currentNote );
+
+          // Render it all!
+          $.view.renderFreshGrid();
           $.view.renderNotes(noteChanges);
           if( showSelectionBox )
             $.view.renderSelectBox(startEvent, e);
@@ -129,27 +137,69 @@ var PIANO = (function(){
         {
           // Determine the final changes to the notes
           var noteChanges = {};
-          switch( $.model.isDragging )
+          switch( dragAction )
           {
             case 'mid':
-              noteChanges.keyDelta   = $.model.pixelsToKey( e.clientY - startEvent.clientY );
-              noteChanges.startDelta = $.model.pixelsToBar( e.clientX - startEvent.clientX );
-              noteChanges.endDelta   = noteChanges.startDelta;
+              // Adjusted existing note(s) by the mid-body
+              if( $.model.isDragging )
+              {
+                noteChanges.keyDelta   = $.model.pixelsToKey( e.clientY - startEvent.clientY );
+                noteChanges.startDelta = $.model.pixelsToBar( e.clientX - startEvent.clientX );
+                noteChanges.endDelta   = noteChanges.startDelta;
+              }
+              // Delete all active notes - no drag so essentially clicked on the active notes
+              else if( currentNote.active )
+                $.model.deleteActiveNotes();
+              // Wasn't a drag a.k.a. basically clicked a note outside an existing note(s) selection
+              else if( !currentNote.active && $.model.countActiveNotes() > 0 )
+              {
+                // Add note to selection
+                if( key.shift )
+                  currentNote.active = true;
+                // Deselected existing note(s) selection
+                else
+                  $.model.clearActiveNotes();
+              }
+              // Delete the inactive note that was just clicked on
+              else
+                $.model.notes.splice( $.model.notes.indexOf( currentNote ), 1 );
               break;
             case 'min':
+              // Adjusted the start grip of note(s)
               noteChanges.startDelta = $.model.pixelsToBar( e.clientX - startEvent.clientX );
               break;
             case 'max':
+              // Adjusted the end grip of note(s)
               noteChanges.endDelta   = $.model.pixelsToBar( e.clientX - startEvent.clientX );
               break;
             case 'select':
             default:
-              $.model.setActiveNotes( $.model.getSelectedNotes(), key.shift );
-              $.model.clearSelectedNotes();
+              // Selected note(s) by selection box
+              if( $.model.isDragging )
+              {
+                $.model.setActiveNotes( $.model.getSelectedNotes(), key.shift );
+                $.model.clearSelectedNotes();
+              }
+              // Deselected existing note(s) selection - wasn't a drag a.k.a. basically clicked a blank area
+              else if( $.model.countActiveNotes() > 0 )
+                $.model.clearActiveNotes();
+              // Create new note - wasn't a drag a.k.a. basically clicked a blank area when there was no existing selection
+              else
+              {
+                var timePosition = $.model.xCoordToBar( e.clientX - $.model.canvas.clientXYDirectional('x') );
+                var  keyPosition = $.model.yCoordToKey( e.clientY - $.model.canvas.clientXYDirectional('y') );
+                var newNote = {};
+                    newNote.key   = Math.ceil( keyPosition );
+                    newNote.start = Math.floor( timePosition * 4 ) * 0.25;
+                    newNote.end   = Math.ceil(  timePosition * 4 ) * 0.25;
+                $.model.setActiveNotes( newNote );
+              }
+              break;
           }
 
           // Update the state
           $.model.isDragging = false;
+          dragAction = null;
           noteChanges = $.model.snapNoteChanges( noteChanges, currentNote );
           $.model.adjustActiveNotes(noteChanges);
           $.view.renderFreshGrid();
@@ -158,7 +208,6 @@ var PIANO = (function(){
         };
       DragKing.addHandler( $.model.canvas, gripHandler, dragHandler, dropHandler );
     };
-  $.router.mouseClick     = function(){};
   $.router.windowResize   = function()
     {
       // Reinitialize dimensions upon resize
@@ -304,7 +353,7 @@ var PIANO = (function(){
           total++;
       return total;
     };
-  $.model.deleteActiveKeys    = function()
+  $.model.deleteActiveNotes   = function()
     {
       // Deletes all notes marked as active
       $.model.notes = $.model.notes.filter( function(el){
@@ -558,147 +607,6 @@ var PIANO = (function(){
   //
   function PianoRoll(container, params)
   {
-    // ------------------------------------------------------------------------
-    // Drag and Drop of grips
-    // ------------------------------------------------------------------------
-    var startEvent  = null;
-    var currentNote = null;
-    var gripHandler = function (e)
-      {
-        startEvent = e;
-
-        // Figure out which note (if any) is being gripped?
-        var timePosition = that.xCoordToBar( e.clientX - that.canvas.clientXYDirectional('x') );
-        var  keyPosition = that.yCoordToKey( e.clientY - that.canvas.clientXYDirectional('y') );
-        currentNote      = that.getHoveredNote(timePosition, keyPosition);
-        that.isDragging  = that.getHoverAction(timePosition, currentNote);
-
-        // Update the currently selected notes
-        if( that.countActiveNotes() == 0 && that.isDragging != 'select' // No existing selection, clicked on a new note
-         || currentNote && ! currentNote.active                         // Clicked on an inactive note
-         || that.isDragging == 'select' && key.shift == false           // Click+drag without holding shift for unioning to the existing selection
-         )
-          that.setActiveNotes(currentNote, key.shift);
-
-        // Set the cursor if necessary
-        switch( that.isDragging )
-        {
-          case 'mid': CurseWords.setExplicitCursor('grabbing'); break;
-          case 'min':
-          case 'max': CurseWords.setExplicitCursor('xresize'); break;
-          case 'select':
-          default:
-        }
-
-        // Re-render
-        that.renderFreshGrid();
-        that.renderNotes();
-      };
-    var dragHandler = function (e)
-      {
-        that.renderFreshGrid();
-
-        // Decide how to draw notes based on what action is currently occurring
-        var noteChanges = {};
-        var showSelectionBox = false;
-        switch( that.isDragging )
-        {
-          case 'mid':
-            noteChanges.keyDelta   = that.pixelsToKey( e.clientY - startEvent.clientY );
-            noteChanges.startDelta = that.pixelsToBar( e.clientX - startEvent.clientX );
-            noteChanges.endDelta   = noteChanges.startDelta;
-            break;
-          case 'min':
-            noteChanges.startDelta = that.pixelsToBar( e.clientX - startEvent.clientX );
-            break;
-          case 'max':
-            noteChanges.endDelta   = that.pixelsToBar( e.clientX - startEvent.clientX );
-            break;
-          case 'select':
-          default:
-            showSelectionBox = true;
-            that.selectNotesInBoundingBox( startEvent, e );
-        }
-
-        // Draw the notes accordingly
-        noteChanges = that.snapNoteChanges( noteChanges, currentNote );
-        that.renderNotes(noteChanges);
-        if( showSelectionBox )
-          that.renderSelectionBox(startEvent, e);
-      };
-    var dropHandler = function (e)
-      {
-        // Determine the final changes to the notes
-        var noteChanges = {};
-        switch( that.isDragging )
-        {
-          case 'mid':
-            noteChanges.keyDelta   = that.pixelsToKey( e.clientY - startEvent.clientY );
-            noteChanges.startDelta = that.pixelsToBar( e.clientX - startEvent.clientX );
-            noteChanges.endDelta   = noteChanges.startDelta;
-            break;
-          case 'min':
-            noteChanges.startDelta = that.pixelsToBar( e.clientX - startEvent.clientX );
-            break;
-          case 'max':
-            noteChanges.endDelta   = that.pixelsToBar( e.clientX - startEvent.clientX );
-            break;
-          case 'select':
-          default:
-            that.activateSelectedNotes();
-        }
-
-        // Update the state
-        that.isDragging = false;
-        noteChanges = that.snapNoteChanges( noteChanges, currentNote );
-        that.applyChangesToActiveNotes(noteChanges);
-        that.renderFreshGrid();
-        that.renderNotes();
-        CurseWords.clearExplicitCursor();
-      };
-    DragKing.addHandler( that.canvas, gripHandler, dragHandler, dropHandler );
-
-    // ------------------------------------------------------------------------
-    // Hovering / Cursor management
-    // ------------------------------------------------------------------------
-    var enterHandler = function (e)
-      {
-        // This line below is useless at the moment... TODO
-        that.isHovering = true;
-      };
-    var hoverHandler = function (e)
-      {
-        if( that.isDragging )
-          return null;
-
-        // Figure out which note is hovered over (if any)?
-        var timePosition = that.xCoordToBar( e.clientX - that.canvas.clientXYDirectional('x') );
-        var  keyPosition = that.yCoordToKey( e.clientY - that.canvas.clientXYDirectional('y') );
-        var  hoveredNote = that.getHoveredNote(timePosition, keyPosition)
-        var  hoverAction = that.getHoverAction(timePosition, hoveredNote);
-
-        // Repaint with the hover state
-        that.renderFreshGrid();
-        that.renderNotes();
-
-        // Set the cursor
-        var newCursor = null;
-        switch( hoverAction )
-        {
-          case 'min': newCursor = 'xresize'; break;
-          case 'max': newCursor = 'xresize'; break;
-          case 'mid': newCursor = 'grab'   ; break;
-             default: newCursor = 'default';
-        }
-        return newCursor;
-      };
-    var exitHandler = function (e)
-      {
-        that.renderFreshGrid();
-        that.renderNotes();
-      };
-    CurseWords.addImplicitCursorHandler( that.canvas, enterHandler, hoverHandler, exitHandler );
-  
     // ------------------------------------------------------------------------
     // DoubleClick handling
     // ------------------------------------------------------------------------

@@ -272,6 +272,27 @@ var PIANO = (function(){
         $.view.renderNotes();
       });
     };
+  $.controller.velocityChange = function()
+    {
+      var velocityInput = document.getElementById('note_velocity');
+
+      velocityInput.addEventListener("change", function (e)
+      {
+        if(velocityInput.value < $.model.minVelocity || velocityInput.value > $.model.maxVelocity)
+        {
+          return;
+        }
+        for( var i = 0; i < $.model.notes.length; i++ )
+        {
+          if($.model.notes[i].active === true || $.model.notes[i].selected === true )
+          {
+            $.model.notes[i].velocity = velocityInput.value;
+          }
+        }
+
+        $.view.renderNotes();
+      });
+    }
 
   // ==========================================================================
   // MODEL
@@ -288,6 +309,9 @@ var PIANO = (function(){
   $.model.notes               = null;
   $.model.isDragging          = false;
   $.model.isHovering          = false;
+  $.model.maxVelocity         = 127;
+  $.model.minVelocity         = 0;
+  $.model.velocityRange       = $.model.maxVelocity - $.model.minVelocity;
   $.model.initialize          = function(container, params)
     {
       // Canvas
@@ -335,6 +359,30 @@ var PIANO = (function(){
       $.model.keyScale.max  = keyScaleMax;
 
     };
+  $.model.getAverageVelocity  = function()
+    {
+      var velocityTotal = 0;
+      var averagevelocity = 0.5;
+      var numActiveNotes = 0;
+      var velocityInput = document.getElementById('note_velocity');
+
+      // Update velocity Average
+      for( var i = 0; i < $.model.notes.length; i++ )
+      {
+        if($.model.notes[i].active === true || $.model.notes[i].selected === true)
+        {                                     
+          velocityTotal += $.model.notes[i].velocity;
+          numActiveNotes ++;
+        }
+      }
+
+      if(numActiveNotes > 0)
+      {
+        averagevelocity =  velocityTotal / numActiveNotes;
+        velocityInput.value = Math.floor(averagevelocity);
+      }
+
+    };
   $.model.setActiveNotes      = function(notes, union)
     {
       if( ! notes ) notes = [];
@@ -351,6 +399,8 @@ var PIANO = (function(){
         // Toggle the state of the note
         notes[i].active = union && !( notes[i].active ) || union == false;
       }
+
+      $.model.getAverageVelocity();
     };
   $.model.adjustActiveNotes   = function(params)
     {
@@ -491,6 +541,8 @@ var PIANO = (function(){
         else
           this.notes[i].selected = false;
       }
+
+      $.model.getAverageVelocity();
     };
 
   // ==========================================================================
@@ -576,13 +628,18 @@ var PIANO = (function(){
               previewNote.key   = params && params.keyDelta   ? $.model.notes[i].key   + params.keyDelta   : $.model.notes[i].key;
               previewNote.end   = params && params.endDelta   ? $.model.notes[i].end   + params.endDelta   : $.model.notes[i].end;
           $.model.canvasContext.strokeStyle = "#401";
-          $.model.canvasContext.fillStyle   = "#812";
+          $.model.canvasContext.fillStyle   = "#FFFFFF";
           $.view.renderSingleNote( previewNote );
         }
         else
         {
-          $.model.canvasContext.strokeStyle = "#812";
-          $.model.canvasContext.fillStyle   = "#F24";
+          var baseVelocityColor = 127;
+          var fillVelocity = $.model.maxVelocity - $.model.notes[i].velocity;
+          fillVelocity = fillVelocity / $.model.maxVelocity;
+          fillVelocity = fillVelocity * (255 - baseVelocityColor) + baseVelocityColor;
+          fillVelocity = Math.floor(fillVelocity);
+          $.model.canvasContext.strokeStyle = "#812"; 
+          $.model.canvasContext.fillStyle   = "#" + fillVelocity.toString(16) + "0000";
           $.view.renderSingleNote( $.model.notes[i] );
         }
 

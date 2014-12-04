@@ -8,8 +8,7 @@
 
 var PIANO = (function(){
 
-  var $ = { router:     {}
-          , controller: {}
+  var $ = { controller: {}
           , model:      {}
           , view:       {}
           };
@@ -227,35 +226,35 @@ var PIANO = (function(){
         return false;
       });
       key('del', function(){ 
-        $.model.deleteActiveKeys();
+        $.model.deleteActiveNotes();
         $.view.renderFreshGrid();
         $.view.renderNotes();
         return false;
       });
       key('up', function(){ 
         var noteChanges = {keyDelta: 1};
-        $.model.applyChangesToActiveNotes(noteChanges);
+        $.model.adjustActiveNotes(noteChanges);
         $.view.renderFreshGrid();
         $.view.renderNotes();
         return false;
       });
       key('down', function(){ 
         var noteChanges = {keyDelta: -1};
-        $.model.applyChangesToActiveNotes(noteChanges);
+        $.model.adjustActiveNotes(noteChanges);
         $.view.renderFreshGrid();
         $.view.renderNotes();
         return false;
       });
       key('left', function(){ 
         var noteChanges = {startDelta: -0.25, endDelta: -0.25};
-        $.model.applyChangesToActiveNotes(noteChanges);
+        $.model.adjustActiveNotes(noteChanges);
         $.view.renderFreshGrid();
         $.view.renderNotes();
         return false;
       });
       key('right', function(){ 
         var noteChanges = {startDelta: 0.25, endDelta: 0.25};
-        $.model.applyChangesToActiveNotes(noteChanges);
+        $.model.adjustActiveNotes(noteChanges);
         $.view.renderFreshGrid();
         $.view.renderNotes();
         return false;
@@ -326,7 +325,7 @@ var PIANO = (function(){
   $.model.pixelsToKey         = function(pixels){ return (  0.0 - ( ( pixels ) / $.model.height * $.model.getKeyRange()                        ) ) * $.model.keyboardSize; };
   $.model.xCoordToBar         = function(xCoord){ return (          ( xCoord ) / $.model.width * $.model.getTimeRange() + $.model.timeScale.min  ) * $.model.clipLength;   };
   $.model.yCoordToKey         = function(yCoord){ return (  1.0 - ( ( yCoord ) / $.model.height * $.model.getKeyRange() + $.model.keyScale.min ) ) * $.model.keyboardSize; };
-  $.model.setViewport  = function(timeScaleMin, timeScaleMax, keyScaleMin, keyScaleMax)
+  $.model.setViewport         = function(timeScaleMin, timeScaleMax, keyScaleMin, keyScaleMax)
     {
       // Update Viewport params
       $.model.resize();

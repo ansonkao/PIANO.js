@@ -25,10 +25,13 @@ var Transport = (function(){
       return time * 120 / bpm + ctx.currentTime;
     };
 
-  var createOscillator = function( key, start, end )
+  var createOscillator = function( key, start, end, velocity )
     {
       var oscillator = ctx.createOscillator();
-      oscillator.connect( masterVolume );
+      var gainNode = ctx.createGain();
+      gainNode.connect(masterVolume);
+      gainNode.gain.value = velocity / 127;
+      oscillator.connect( gainNode );
       oscillator.type = 'square';
       oscillator.frequency.value = keyFrequency[ key ];
       oscillator.start( getPlayTime( start ) );
@@ -41,7 +44,7 @@ var Transport = (function(){
 
       for( var i in notes )
       {
-        createOscillator( notes[i].key, notes[i].start, notes[i].end );
+        createOscillator( notes[i].key, notes[i].start, notes[i].end, notes[i].velocity );
       }
     };
 

@@ -42,7 +42,7 @@
           <button id="play"><span class="icon" style="color: #080;">&#9658;</span></button>
           <button id="stop"><span class="icon" style="color: #000;">&#8718;</span></button>
           <input id="tempo" type="number" step="1" value="105" />
-          <input id="note_intensity" type="number" step="1" value="50" />
+          <input id="note_velocity" type="number" step="1" value="50" />
         </div>
       </footer>
 
@@ -52,78 +52,78 @@
   <script lang="text/javascript" src="../dist/PIANO.js"></script>
   <script lang="text/javascript">
     var pianoParams = {};
-        pianoParams.notes = [ { key: 56, start: 0.000, end: 0.105, intensity: 0.5 }
-                            , { key: 56, start: 0.125, end: 0.230, intensity: 0.5 }
-                            , { key: 30, start: 0.000, end: 0.105, intensity: 0.5 }
-                            , { key: 30, start: 0.125, end: 0.230, intensity: 0.5 }
-                            , { key: 30, start: 0.375, end: 0.480, intensity: 0.5 }
-                            , { key: 56, start: 0.375, end: 0.480, intensity: 0.5 }
-                            , { key: 52, start: 0.625, end: 0.721, intensity: 0.5 }
-                            , { key: 56, start: 0.750, end: 0.846, intensity: 0.5 }
-                            , { key: 30, start: 0.625, end: 0.721, intensity: 0.5 }
-                            , { key: 30, start: 0.750, end: 0.846, intensity: 0.5 }
-                            , { key: 59, start: 1.000, end: 1.088, intensity: 0.5 }
-                            , { key: 51, start: 1.000, end: 1.088, intensity: 0.5 }
-                            , { key: 47, start: 1.000, end: 1.088, intensity: 0.5 }
-                            , { key: 47, start: 1.500, end: 1.588, intensity: 0.5 }
-                            , { key: 52, start: 2.000, end: 2.063, intensity: 0.5 }
-                            , { key: 44, start: 2.000, end: 2.063, intensity: 0.5 }
-                            , { key: 35, start: 2.000, end: 2.063, intensity: 0.5 }
-                            , { key: 47, start: 2.375, end: 2.438, intensity: 0.5 }
-                            , { key: 32, start: 2.375, end: 2.438, intensity: 0.5 }
-                            , { key: 35, start: 1.000, end: 1.063, intensity: 0.5 }
-                            , { key: 35, start: 1.500, end: 1.561, intensity: 0.5 }
-                            , { key: 44, start: 2.750, end: 2.813, intensity: 0.5 }
-                            , { key: 28, start: 2.750, end: 2.813, intensity: 0.5 }
-                            , { key: 33, start: 3.125, end: 3.188, intensity: 0.5 }
-                            , { key: 40, start: 3.125, end: 3.188, intensity: 0.5 }
-                            , { key: 49, start: 3.125, end: 3.188, intensity: 0.5 }
-                            , { key: 40, start: 2.375, end: 2.438, intensity: 0.5 }
-                            , { key: 35, start: 2.750, end: 2.813, intensity: 0.5 }
-                            , { key: 51, start: 3.375, end: 3.438, intensity: 0.5 }
-                            , { key: 50, start: 3.625, end: 3.688, intensity: 0.5 }
-                            , { key: 42, start: 3.375, end: 3.438, intensity: 0.5 }
-                            , { key: 35, start: 3.375, end: 3.438, intensity: 0.5 }
-                            , { key: 41, start: 3.625, end: 3.688, intensity: 0.5 }
-                            , { key: 34, start: 3.625, end: 3.688, intensity: 0.5 }
-                            , { key: 49, start: 3.777, end: 3.869, intensity: 0.5 }
-                            , { key: 40, start: 3.777, end: 3.869, intensity: 0.5 }
-                            , { key: 33, start: 3.777, end: 3.869, intensity: 0.5 }
-                            , { key: 40, start: 4.000, end: 4.063, intensity: 0.5 }
-                            , { key: 47, start: 4.000, end: 4.063, intensity: 0.5 }
-                            , { key: 32, start: 4.000, end: 4.063, intensity: 0.5 }
-                            , { key: 56, start: 4.151, end: 4.213, intensity: 0.5 }
-                            , { key: 47, start: 4.151, end: 4.213, intensity: 0.5 }
-                            , { key: 40, start: 4.151, end: 4.213, intensity: 0.5 }
-                            , { key: 44, start: 4.331, end: 4.394, intensity: 0.5 }
-                            , { key: 51, start: 4.331, end: 4.394, intensity: 0.5 }
-                            , { key: 59, start: 4.331, end: 4.394, intensity: 0.5 }
-                            , { key: 46, start: 0.375, end: 0.479, intensity: 0.5 }
-                            , { key: 46, start: 0.125, end: 0.229, intensity: 0.5 }
-                            , { key: 46, start: 0.000, end: 0.104, intensity: 0.5 }
-                            , { key: 46, start: 0.625, end: 0.715, intensity: 0.5 }
-                            , { key: 46, start: 0.750, end: 0.840, intensity: 0.5 }
-                            , { key: 45, start: 4.500, end: 4.563, intensity: 0.5 }
-                            , { key: 52, start: 4.500, end: 4.563, intensity: 0.5 }
-                            , { key: 61, start: 4.500, end: 4.563, intensity: 0.5 }
-                            , { key: 42, start: 4.688, end: 4.750, intensity: 0.5 }
-                            , { key: 52, start: 5.250, end: 5.313, intensity: 0.5 }
-                            , { key: 54, start: 5.375, end: 5.438, intensity: 0.5 }
-                            , { key: 51, start: 5.500, end: 5.563, intensity: 0.5 }
-                            , { key: 44, start: 5.250, end: 5.313, intensity: 0.5 }
-                            , { key: 45, start: 5.375, end: 5.438, intensity: 0.5 }
-                            , { key: 42, start: 5.500, end: 5.563, intensity: 0.5 }
-                            , { key: 37, start: 5.250, end: 5.313, intensity: 0.5 }
-                            , { key: 39, start: 5.375, end: 5.438, intensity: 0.5 }
-                            , { key: 35, start: 5.500, end: 5.563, intensity: 0.5 }
-                            , { key: 49, start: 4.688, end: 4.750, intensity: 0.5 }
-                            , { key: 57, start: 4.688, end: 4.750, intensity: 0.5 }
-                            , { key: 56, start: 5.000, end: 5.063, intensity: 0.5 }
-                            , { key: 49, start: 5.000, end: 5.063, intensity: 0.5 }
-                            , { key: 40, start: 5.000, end: 5.063, intensity: 0.5 }
-                            , { key: 59, start: 4.813, end: 4.875, intensity: 0.5 }
-                            , { key: 51, start: 4.813, end: 4.875, intensity: 0.5 }
-                            , { key: 44, start: 4.813, end: 4.875, intensity: 0.5 }
+        pianoParams.notes = [ { key: 56, start: 0.000, end: 0.105, velocity: 0.5 }
+                            , { key: 56, start: 0.125, end: 0.230, velocity: 0.5 }
+                            , { key: 30, start: 0.000, end: 0.105, velocity: 0.5 }
+                            , { key: 30, start: 0.125, end: 0.230, velocity: 0.5 }
+                            , { key: 30, start: 0.375, end: 0.480, velocity: 0.5 }
+                            , { key: 56, start: 0.375, end: 0.480, velocity: 0.5 }
+                            , { key: 52, start: 0.625, end: 0.721, velocity: 0.5 }
+                            , { key: 56, start: 0.750, end: 0.846, velocity: 0.5 }
+                            , { key: 30, start: 0.625, end: 0.721, velocity: 0.5 }
+                            , { key: 30, start: 0.750, end: 0.846, velocity: 0.5 }
+                            , { key: 59, start: 1.000, end: 1.088, velocity: 0.5 }
+                            , { key: 51, start: 1.000, end: 1.088, velocity: 0.5 }
+                            , { key: 47, start: 1.000, end: 1.088, velocity: 0.5 }
+                            , { key: 47, start: 1.500, end: 1.588, velocity: 0.5 }
+                            , { key: 52, start: 2.000, end: 2.063, velocity: 0.5 }
+                            , { key: 44, start: 2.000, end: 2.063, velocity: 0.5 }
+                            , { key: 35, start: 2.000, end: 2.063, velocity: 0.5 }
+                            , { key: 47, start: 2.375, end: 2.438, velocity: 0.5 }
+                            , { key: 32, start: 2.375, end: 2.438, velocity: 0.5 }
+                            , { key: 35, start: 1.000, end: 1.063, velocity: 0.5 }
+                            , { key: 35, start: 1.500, end: 1.561, velocity: 0.5 }
+                            , { key: 44, start: 2.750, end: 2.813, velocity: 0.5 }
+                            , { key: 28, start: 2.750, end: 2.813, velocity: 0.5 }
+                            , { key: 33, start: 3.125, end: 3.188, velocity: 0.5 }
+                            , { key: 40, start: 3.125, end: 3.188, velocity: 0.5 }
+                            , { key: 49, start: 3.125, end: 3.188, velocity: 0.5 }
+                            , { key: 40, start: 2.375, end: 2.438, velocity: 0.5 }
+                            , { key: 35, start: 2.750, end: 2.813, velocity: 0.5 }
+                            , { key: 51, start: 3.375, end: 3.438, velocity: 0.5 }
+                            , { key: 50, start: 3.625, end: 3.688, velocity: 0.5 }
+                            , { key: 42, start: 3.375, end: 3.438, velocity: 0.5 }
+                            , { key: 35, start: 3.375, end: 3.438, velocity: 0.5 }
+                            , { key: 41, start: 3.625, end: 3.688, velocity: 0.5 }
+                            , { key: 34, start: 3.625, end: 3.688, velocity: 0.5 }
+                            , { key: 49, start: 3.777, end: 3.869, velocity: 0.5 }
+                            , { key: 40, start: 3.777, end: 3.869, velocity: 0.5 }
+                            , { key: 33, start: 3.777, end: 3.869, velocity: 0.5 }
+                            , { key: 40, start: 4.000, end: 4.063, velocity: 0.5 }
+                            , { key: 47, start: 4.000, end: 4.063, velocity: 0.5 }
+                            , { key: 32, start: 4.000, end: 4.063, velocity: 0.5 }
+                            , { key: 56, start: 4.151, end: 4.213, velocity: 0.5 }
+                            , { key: 47, start: 4.151, end: 4.213, velocity: 0.5 }
+                            , { key: 40, start: 4.151, end: 4.213, velocity: 0.5 }
+                            , { key: 44, start: 4.331, end: 4.394, velocity: 0.5 }
+                            , { key: 51, start: 4.331, end: 4.394, velocity: 0.5 }
+                            , { key: 59, start: 4.331, end: 4.394, velocity: 0.5 }
+                            , { key: 46, start: 0.375, end: 0.479, velocity: 0.5 }
+                            , { key: 46, start: 0.125, end: 0.229, velocity: 0.5 }
+                            , { key: 46, start: 0.000, end: 0.104, velocity: 0.5 }
+                            , { key: 46, start: 0.625, end: 0.715, velocity: 0.5 }
+                            , { key: 46, start: 0.750, end: 0.840, velocity: 0.5 }
+                            , { key: 45, start: 4.500, end: 4.563, velocity: 0.5 }
+                            , { key: 52, start: 4.500, end: 4.563, velocity: 0.5 }
+                            , { key: 61, start: 4.500, end: 4.563, velocity: 0.5 }
+                            , { key: 42, start: 4.688, end: 4.750, velocity: 0.5 }
+                            , { key: 52, start: 5.250, end: 5.313, velocity: 0.5 }
+                            , { key: 54, start: 5.375, end: 5.438, velocity: 0.5 }
+                            , { key: 51, start: 5.500, end: 5.563, velocity: 0.5 }
+                            , { key: 44, start: 5.250, end: 5.313, velocity: 0.5 }
+                            , { key: 45, start: 5.375, end: 5.438, velocity: 0.5 }
+                            , { key: 42, start: 5.500, end: 5.563, velocity: 0.5 }
+                            , { key: 37, start: 5.250, end: 5.313, velocity: 0.5 }
+                            , { key: 39, start: 5.375, end: 5.438, velocity: 0.5 }
+                            , { key: 35, start: 5.500, end: 5.563, velocity: 0.5 }
+                            , { key: 49, start: 4.688, end: 4.750, velocity: 0.5 }
+                            , { key: 57, start: 4.688, end: 4.750, velocity: 0.5 }
+                            , { key: 56, start: 5.000, end: 5.063, velocity: 0.5 }
+                            , { key: 49, start: 5.000, end: 5.063, velocity: 0.5 }
+                            , { key: 40, start: 5.000, end: 5.063, velocity: 0.5 }
+                            , { key: 59, start: 4.813, end: 4.875, velocity: 0.5 }
+                            , { key: 51, start: 4.813, end: 4.875, velocity: 0.5 }
+                            , { key: 44, start: 4.813, end: 4.875, velocity: 0.5 }
                             ];
     var scrollParams = { x: {min: 0.000, max: 0.500 }
                        , y: {min: 0.300, max: 0.705 }
@@ -140,7 +140,7 @@
     document.getElementById("play" ).addEventListener('click' , function(e){ Transport.play(); e.preventDefault(); });
     document.getElementById("stop" ).addEventListener('click' , function(e){ Transport.stop(); e.preventDefault(); });
     document.getElementById("tempo").addEventListener('change', function(e){ Transport.setTempo( this.value ); e.preventDefault(); });
-	//document.getElementById("note_intensity").addEventListener('change', function(e){ Transport.setTempo( this.value ); e.preventDefault(); });
+	//document.getElementById("note_velocity").addEventListener('change', function(e){ Transport.setTempo( this.value ); e.preventDefault(); });
   </script>
 
 </body>

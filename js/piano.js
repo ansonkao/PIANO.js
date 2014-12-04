@@ -70,7 +70,7 @@ var PIANO = (function(){
     // DOM element references
     this.container     = container;
     this.canvas        = container.appendChild( document.createElement('canvas') );
-    this.intensityInput = document.getElementById('note_intensity');
+    this.velocityInput = document.getElementById('note_velocity');
     this.canvas.className = 'piano-canvas';
     this.canvasContext = this.canvas.getContext("2d");
 
@@ -117,10 +117,10 @@ var PIANO = (function(){
     });
 	
 	// ------------------------------------------------------------------------
-	// Handling Intensity Change Event
+	// Handling velocity Change Event
 	// ------------------------------------------------------------------------
-	this.intensityInput.addEventListener("change", function (e){
-		if(that.intensityInput.value < 0 || that.intensityInput.value > 100)
+	this.velocityInput.addEventListener("change", function (e){
+		if(that.velocityInput.value < 0 || that.velocityInput.value > 127)
 		{
 			return;
 		}
@@ -128,7 +128,7 @@ var PIANO = (function(){
       	{
       		if(that.notes[i].active === true || that.notes[i].selected === true )
       		{             	      	             	
-				that.notes[i].intensity = that.intensityInput.value / 100.00;
+				that.notes[i].velocity = that.velocityInput.value / 127.00;
       		}
       	}
       	
@@ -398,8 +398,8 @@ var PIANO = (function(){
   // Set the specified notes as active (being interacted with by the mouse)
   PianoRoll.prototype.setActiveNotes = function(notes, union)
     {
-       var intensityTotal = 0;
-       var averageIntensity = 0.5;
+       var velocityTotal = 0;
+       var averagevelocity = 0.5;
        var numActiveNotes = 0;
 
 
@@ -424,20 +424,20 @@ var PIANO = (function(){
         notes[i].active = !( notes[i].active );
       }
 
-      // Update Intensity Average
+      // Update velocity Average
       for( var i = 0; i < notes.length; i++ )
       {
       	if(notes[i].active === true)
       	{             	      	             	
-      		intensityTotal += notes[i].intensity;
+      		velocityTotal += notes[i].velocity;
       		numActiveNotes ++;
       	}
       }
       
       if(numActiveNotes > 0)
       {
-      	averageIntensity =  intensityTotal / numActiveNotes;
-      	this.intensityInput.value = Math.floor(averageIntensity * 100 );
+      	averagevelocity =  velocityTotal / numActiveNotes;
+      	this.velocityInput.value = Math.floor(averagevelocity * 127 );
 
       }
       
@@ -519,8 +519,8 @@ var PIANO = (function(){
       var barMax = bar1 > bar2 ? bar1 : bar2;
       var keyMin = key1 < key2 ? key1 : key2;
       var keyMax = key1 > key2 ? key1 : key2;
-      var intensityTotal = 0;
-      var averageIntensity = 0.5;
+      var velocityTotal = 0;
+      var averagevelocity = 0.5;
       var numActiveNotes = 0;
 
       for( var i = 0; i < this.notes.length; i++ )
@@ -530,7 +530,7 @@ var PIANO = (function(){
          {
           this.notes[i].selected = true;
           numActiveNotes ++;
-          intensityTotal += this.notes[i].intensity;
+          velocityTotal += this.notes[i].velocity;
          }
         else
           this.notes[i].selected = false;
@@ -538,8 +538,8 @@ var PIANO = (function(){
       
       if(numActiveNotes > 0)
       {
-      	averageIntensity = intensityTotal / numActiveNotes;
-      	this.intensityInput.value = Math.floor(averageIntensity * 100 );
+      	averagevelocity = velocityTotal / numActiveNotes;
+      	this.velocityInput.value = Math.floor(averagevelocity * 127 );
       }
       
     };
@@ -674,10 +674,10 @@ var PIANO = (function(){
         }
         else
         {
-          var baseIntensityColor = 100;
-          var fillIntensity = Math.floor( ( 1 - this.notes[i].intensity ) * ( 255 - baseIntensityColor ) + baseIntensityColor ).toString(16)  ;
+          var basevelocityColor = 127;
+          var fillvelocity = Math.floor( ( 1 - this.notes[i].velocity ) * ( 255 - basevelocityColor ) + basevelocityColor ).toString(16)  ;
           this.canvasContext.strokeStyle = "#812";
-          this.canvasContext.fillStyle   = "#" + fillIntensity + "0000";
+          this.canvasContext.fillStyle   = "#" + fillvelocity + "0000";
           this.renderSingleNote( this.notes[i] );
         }
 

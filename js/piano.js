@@ -6,7 +6,10 @@
  */
 
 
+
 var PIANO = (function(){
+
+  'use strict';
 
   var $ = { controller: {}
           , model:      {}
@@ -32,7 +35,7 @@ var PIANO = (function(){
           // Figure out which note is hovered over (if any)?
           var timePosition = $.model.xCoordToBar( e.clientX - $.model.canvas.clientXYDirectional('x') );
           var  keyPosition = $.model.yCoordToKey( e.clientY - $.model.canvas.clientXYDirectional('y') );
-          var  hoveredNote = $.model.getHoveredNote(timePosition, keyPosition)
+          var  hoveredNote = $.model.getHoveredNote(timePosition, keyPosition);
           var  hoverAction = $.model.getHoverAction(timePosition, hoveredNote);
 
           // Repaint with the hover state
@@ -79,7 +82,6 @@ var PIANO = (function(){
             case 'min':
             case 'max': CurseWords.setExplicitCursor('xresize');  break;
             case 'select':
-            default:
           }
 
           // Re-render
@@ -118,7 +120,6 @@ var PIANO = (function(){
               noteChanges.endDelta   = $.model.pixelsToBar( e.clientX - startEvent.clientX );
               break;
             case 'select':
-            default:
               showSelectionBox = true;
               $.model.selectNotesInBox( startEvent, e );
           }
@@ -172,7 +173,6 @@ var PIANO = (function(){
               noteChanges.endDelta   = $.model.pixelsToBar( e.clientX - startEvent.clientX );
               break;
             case 'select':
-            default:
               // Selected note(s) by selection box
               if( $.model.isDragging )
               {
@@ -292,7 +292,7 @@ var PIANO = (function(){
 
         $.view.renderNotes();
       });
-    }
+    };
 
   // ==========================================================================
   // MODEL
@@ -341,10 +341,10 @@ var PIANO = (function(){
   $.model.getKeyRange         = function(){ return $.model.keyScale.max  - $.model.keyScale.min;  };
   $.model.percentToKey        = function(percent){ return Math.ceil( percent * $.model.keyboardSize ); }; // Where percent is between 0.000 and 1.000
   $.model.percentToBar        = function(percent){ return Math.ceil( percent * $.model.clipLength   ); }; // Where percent is between 0.000 and 1.000
-  $.model.barToPixels         = function(bar){ return ( ( bar / $.model.clipLength   )                         ) / $.model.getTimeRange() * $.model.width  };
-  $.model.keyToPixels         = function(key){ return ( ( key / $.model.keyboardSize )                         ) / $.model.getKeyRange()  * $.model.height };
-  $.model.barToXCoord         = function(bar){ return ( ( bar / $.model.clipLength   ) - $.model.timeScale.min ) / $.model.getTimeRange() * $.model.width  };
-  $.model.keyToYCoord         = function(key){ return ( ( key / $.model.keyboardSize ) - $.model.keyScale.min  ) / $.model.getKeyRange()  * $.model.height };
+  $.model.barToPixels         = function(bar){ return ( ( bar / $.model.clipLength   )                         ) / $.model.getTimeRange() * $.model.width;  };
+  $.model.keyToPixels         = function(key){ return ( ( key / $.model.keyboardSize )                         ) / $.model.getKeyRange()  * $.model.height; };
+  $.model.barToXCoord         = function(bar){ return ( ( bar / $.model.clipLength   ) - $.model.timeScale.min ) / $.model.getTimeRange() * $.model.width;  };
+  $.model.keyToYCoord         = function(key){ return ( ( key / $.model.keyboardSize ) - $.model.keyScale.min  ) / $.model.getKeyRange()  * $.model.height; };
   $.model.pixelsToBar         = function(pixels){ return (          ( pixels ) / $.model.width * $.model.getTimeRange()                          ) * $.model.clipLength;   };
   $.model.pixelsToKey         = function(pixels){ return (  0.0 - ( ( pixels ) / $.model.height * $.model.getKeyRange()                        ) ) * $.model.keyboardSize; };
   $.model.xCoordToBar         = function(xCoord){ return (          ( xCoord ) / $.model.width * $.model.getTimeRange() + $.model.timeScale.min  ) * $.model.clipLength;   };
@@ -397,7 +397,7 @@ var PIANO = (function(){
           $.model.notes.push( notes[i] );
 
         // Toggle the state of the note
-        notes[i].active = union && !( notes[i].active ) || union == false;
+        notes[i].active = union && !( notes[i].active ) || union === false;
       }
 
       $.model.getAverageVelocity();
@@ -430,7 +430,7 @@ var PIANO = (function(){
     {
       // Deletes all notes marked as active
       $.model.notes = $.model.notes.filter( function(el){
-        return el.active == false;
+        return ! el.active;
       });
     };
   $.model.clearActiveNotes    = function()
@@ -463,12 +463,13 @@ var PIANO = (function(){
     {
       // Which note is the cursor currently over?
       for( var i = 0; i < $.model.notes.length; i++ )
-        if( timePositionBars >= $.model.notes[i].start
-         && timePositionBars <= $.model.notes[i].end
-         && $.model.notes[i].key - key < 1
-         && $.model.notes[i].key - key > 0
-        )
-          return $.model.notes[i];
+      {
+        if(   timePositionBars >= $.model.notes[i].start )
+          if( timePositionBars <= $.model.notes[i].end )
+            if(   $.model.notes[i].key - key < 1 )
+              if( $.model.notes[i].key - key > 0 )
+                return $.model.notes[i];
+      }
       return null;
     };
   $.model.getHoverAction      = function(timePositionBars, hoveredNote)
@@ -520,7 +521,7 @@ var PIANO = (function(){
         // Snap to the closest gridline
         else
           return quantizedResult - value;
-    }
+    };
   $.model.selectNotesInBox    = function(startEvent, endEvent)
     {
       // Given a 2 mouse events, set all the notes intersecting the resultant bounding box as selected
@@ -535,9 +536,11 @@ var PIANO = (function(){
 
       for( var i = 0; i < this.notes.length; i++ )
       {
-        if( this.notes[i].start < barMax && this.notes[i].key < keyMax + 1
-         && this.notes[i].end   > barMin && this.notes[i].key > keyMin + 0 )
-          this.notes[i].selected = true;
+        if(   this.notes[i].start < barMax )
+          if( this.notes[i].end   > barMin )
+            if(   this.notes[i].key < keyMax + 1 )
+              if( this.notes[i].key > keyMin + 0 )
+                this.notes[i].selected = true;
         else
           this.notes[i].selected = false;
       }
@@ -567,10 +570,9 @@ var PIANO = (function(){
       $.model.canvasContext.fillStyle   = "#DDDDE4";
 
       // Each edge + black key fills
-      for( var key  = $.model.percentToKey( $.model.keyScale.min )
-         ;     key <= $.model.percentToKey( $.model.keyScale.max )
-         ;     key++
-         )
+      var minKey = $.model.percentToKey( $.model.keyScale.min );
+      var maxKey = $.model.percentToKey( $.model.keyScale.max );
+      for( var key = minKey; key <= maxKey; key++ )
       {
         var prevEdge = Math.closestHalfPixel( $.model.keyToYCoord( key - 1 ) );
         var nextEdge = Math.closestHalfPixel( $.model.keyToYCoord( key     ) );
@@ -591,13 +593,12 @@ var PIANO = (function(){
     {
       // Styles
       $.model.canvasContext.lineWidth = 1.0;
-      key.alt ? $.model.canvasContext.setLineDash([2,4]) : $.model.canvasContext.setLineDash([]);
+      $.model.canvasContext.setLineDash( key.alt ? [2,4] : [] );
 
       // Draw lines for each beat
-      for( var bar  = $.model.percentToBar( $.model.timeScale.min ) - 1
-         ;     bar <  $.model.percentToBar( $.model.timeScale.max )
-         ;     bar += 0.25
-         )
+      var minBar = $.model.percentToBar( $.model.timeScale.min ) - 1;
+      var maxBar = $.model.percentToBar( $.model.timeScale.max );
+      for( var bar = minBar; bar < maxBar; bar += 0.25 )
       {
         // Start each line as a separate path (different colors)
         $.model.canvasContext.beginPath();
@@ -619,9 +620,9 @@ var PIANO = (function(){
         $.model.canvasContext.setLineDash([]);
 
         // Show the impending state of note selection
-        if( key.shift && ($.model.notes[i].active ^ $.model.notes[i].selected)
-         || (key.shift == false && ($.model.notes[i].selected || $.model.notes[i].active))
-          )
+        var shiftKeyDownAndNoteActive =  key.shift && ( $.model.notes[i].active   ^  $.model.notes[i].selected ); // If the shift key is down, we're trying to preview the exclusive union of active and selected notes as active (active keys would be deselected)
+        var shiftKeyUpAndNoteActive   = !key.shift && ( $.model.notes[i].selected || $.model.notes[i].active   ); // If the shift key is up, we're trying to preview ALL active and selected keys as active
+        if( shiftKeyDownAndNoteActive || shiftKeyUpAndNoteActive )
         {
           var previewNote = {};
               previewNote.start = params && params.startDelta ? $.model.notes[i].start + params.startDelta : $.model.notes[i].start;

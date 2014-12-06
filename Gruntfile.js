@@ -13,6 +13,14 @@ module.exports = function(grunt) {
         }
       }
     },
+    jshint: {
+      options: {
+        laxcomma: true
+      },
+      all: [
+        'js/*.js'
+      ]
+    },
     uglify: {
       dev: {
         files: {
@@ -35,17 +43,21 @@ module.exports = function(grunt) {
       },
       js: {
         files: "js/*.js",
-        tasks: "uglify"
+        tasks: [
+          "jshint",
+          "uglify"
+        ]
       }
     }
   });
 
   // Tasks
   grunt.loadNpmTasks('grunt-contrib-less');
+  grunt.loadNpmTasks('grunt-contrib-jshint');
   grunt.loadNpmTasks('grunt-contrib-uglify');
   grunt.loadNpmTasks('grunt-contrib-watch');
 
   // Commands
-  grunt.registerTask('default', ['less', 'uglify']);
+  grunt.registerTask('default', ['less', 'jshint', 'uglify']);
 
 };

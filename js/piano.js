@@ -3,11 +3,13 @@
  * PianoRoll.init()
  * PianoRoll.setPlayHead()
  * PianoRoll.setNotes()
+ * 
+ * https://github.com/bgrins/TinyColor
  */
 
 
 
-var PIANO = (function(){
+var PIANO = (function(key){
 
   'use strict';
 
@@ -187,10 +189,11 @@ var PIANO = (function(){
               {
                 var timePosition = $.model.xCoordToBar( e.clientX - $.model.canvas.clientXYDirectional('x') );
                 var  keyPosition = $.model.yCoordToKey( e.clientY - $.model.canvas.clientXYDirectional('y') );
-                var newNote = {};
-                    newNote.key   = Math.ceil( keyPosition );
-                    newNote.start = Math.floor( timePosition * 4 ) * 0.25;
-                    newNote.end   = Math.ceil(  timePosition * 4 ) * 0.25;
+                var newNoteParams = { key:   Math.ceil( keyPosition )
+                                    , end:   Math.ceil(  timePosition * 4 ) * 0.25
+                                    , start: Math.floor( timePosition * 4 ) * 0.25
+                                    };
+                var newNote = new Note(newNoteParams);
                 $.model.setActiveNotes( newNote );
               }
               break;
@@ -276,18 +279,16 @@ var PIANO = (function(){
     {
       var velocityInput = document.getElementById('note_velocity');
 
-      velocityInput.addEventListener("change", function (e)
-      {
+      velocityInput.addEventListener("change", function (e){
+        // Validate velocity range
         if(velocityInput.value < $.model.minVelocity || velocityInput.value > $.model.maxVelocity)
-        {
           return;
-        }
+
+        // Assign new velocity
         for( var i = 0; i < $.model.notes.length; i++ )
         {
-          if($.model.notes[i].active === true || $.model.notes[i].selected === true )
-          {
-            $.model.notes[i].velocity = velocityInput.value;
-          }
+          if( $.model.notes[i].active )
+            $.model.notes[i].velocity = parseInt( velocityInput.value );
         }
 
         $.view.renderNotes();
@@ -362,26 +363,24 @@ var PIANO = (function(){
   $.model.getAverageVelocity  = function()
     {
       var velocityTotal = 0;
-      var averagevelocity = 0.5;
       var numActiveNotes = 0;
       var velocityInput = document.getElementById('note_velocity');
 
       // Update velocity Average
       for( var i = 0; i < $.model.notes.length; i++ )
       {
-        if($.model.notes[i].active === true || $.model.notes[i].selected === true)
+        if( $.model.notes[i].active )
         {                                     
           velocityTotal += $.model.notes[i].velocity;
-          numActiveNotes ++;
+          numActiveNotes++;
         }
       }
 
       if(numActiveNotes > 0)
       {
-        averagevelocity =  velocityTotal / numActiveNotes;
-        velocityInput.value = Math.floor(averagevelocity);
+        console.log( velocityTotal, numActiveNotes, velocityTotal / numActiveNotes );
+        velocityInput.value = Math.floor(velocityTotal / numActiveNotes);
       }
-
     };
   $.model.setActiveNotes      = function(notes, union)
     {
@@ -629,18 +628,17 @@ var PIANO = (function(){
               previewNote.key   = params && params.keyDelta   ? $.model.notes[i].key   + params.keyDelta   : $.model.notes[i].key;
               previewNote.end   = params && params.endDelta   ? $.model.notes[i].end   + params.endDelta   : $.model.notes[i].end;
           $.model.canvasContext.strokeStyle = "#401";
-          $.model.canvasContext.fillStyle   = "#FFFFFF";
+          $.model.canvasContext.fillStyle   = "#812";
           $.view.renderSingleNote( previewNote );
         }
         else
         {
-          var baseVelocityColor = 127;
-          var fillVelocity = $.model.maxVelocity - $.model.notes[i].velocity;
-          fillVelocity = fillVelocity / $.model.maxVelocity;
-          fillVelocity = fillVelocity * (255 - baseVelocityColor) + baseVelocityColor;
-          fillVelocity = Math.floor(fillVelocity);
-          $.model.canvasContext.strokeStyle = "#812"; 
-          $.model.canvasContext.fillStyle   = "#" + fillVelocity.toString(16) + "0000";
+          var intensityFactor = $.model.notes[i].velocity / $.model.maxVelocity;
+          var r = Math.floor( 215 +  32*intensityFactor );
+          var g = Math.floor( 160 - 144*intensityFactor );
+          var b = Math.floor( 160 - 128*intensityFactor );
+          $.model.canvasContext.strokeStyle = "#812";
+          $.model.canvasContext.fillStyle   = "#" + r.toString(16) + g.toString(16) + b.toString(16);
           $.view.renderSingleNote( $.model.notes[i] );
         }
 
@@ -678,4 +676,4 @@ var PIANO = (function(){
          , getAllNotes:   function(){ return $.model.notes; }
          };
 
-})();
+})(key);

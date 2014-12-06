@@ -376,11 +376,9 @@ var PIANO = (function(key){
         }
       }
 
+      // Update UI control if applicable
       if(numActiveNotes > 0)
-      {
-        console.log( velocityTotal, numActiveNotes, velocityTotal / numActiveNotes );
         velocityInput.value = Math.floor(velocityTotal / numActiveNotes);
-      }
     };
   $.model.setActiveNotes      = function(notes, union)
     {

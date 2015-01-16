@@ -1,0 +1,72 @@
+@key-width: 2 * 5px; // Must be an even value for symmetrical keys
+
+.keyboard {
+  display: block;
+  position: relative;
+  box-sizing: content-box;
+  overflow: hidden;
+  transition: width 0.25s, height 0.25s, margin 0.25s;
+
+  height: @key-width * 6;
+  width: 88.75 * @key-width;
+  box-shadow: 0px 0px 4px #555;
+
+  .key {
+    display: block;
+    position: relative;
+    box-sizing: border-box;
+    cursor: pointer;
+    transition: width 0.25s, height 0.25s, margin 0.25s;
+    float: right;
+    border-top: 0px;
+    width: @key-width;
+    height: @key-width * 6;
+
+    &.white {
+      border: 1px solid #888;
+      background: #FFF;
+      z-index: 5;   // Above the shadow but below the black keys
+      width: 1.75*@key-width;   // Make white keys wider
+      border-right-width: 0px;
+
+      &.active,
+      &:active {
+        background: #FCC;
+        box-shadow: inset 1px -1px #FAA
+      }
+    }
+    &.black {
+      border: 1px solid #222;
+      background: #555;
+      z-index: 10;  // Above the black keys
+      box-shadow: 1px 1px 1px #888;
+      width: @key-width - 1;    // Cut a pixel off of black keys to prevent asymmetry
+      height: @key-width * 4;
+
+      // Overlap the adjacent white keys (different amounts depending on where they are on the scale)
+      margin: 0px -0.5*@key-width 0px 1-0.5*@key-width;
+      &.lower {
+        margin: 0px -0.25*@key-width 0px 1-0.75*@key-width;
+      }
+      &.higher {
+        margin: 0px -0.75*@key-width 0px 1-0.25*@key-width;
+      }
+
+      &.active,
+      &:active {
+        background: #800;
+        box-shadow: inset 1px -1px #300;
+      }
+    }
+
+    &:first-child {
+      border-right-width: 1px;
+    }
+
+    &.thinner,
+    &:first-child,
+    &:last-child {
+      width: 1.5*@key-width;     // Certain white keys are sandwiched slightly differently to maintain proportions
+    }
+  }
+}

@@ -1,14 +1,13 @@
-@key-width: 2 * 5px; // Must be an even value for symmetrical keys
+@num-keys: 88.75;
+@key-width: 100% / @num-keys;
 
 .keyboard {
   display: block;
   position: relative;
   box-sizing: content-box;
   overflow: hidden;
-  transition: width 0.25s, height 0.25s, margin 0.25s;
 
-  height: @key-width * 6;
-  width: 88.75 * @key-width;
+  height: 50px;                   // AUTOMATE THIS TO AN ASPECT RATIO!
   box-shadow: 0px 0px 4px #555;
 
   .key {
@@ -16,11 +15,10 @@
     position: relative;
     box-sizing: border-box;
     cursor: pointer;
-    transition: width 0.25s, height 0.25s, margin 0.25s;
     float: right;
     border-top: 0px;
     width: @key-width;
-    height: @key-width * 6;
+    height: 100%;
 
     &.white {
       border: 1px solid #888;
@@ -40,16 +38,16 @@
       background: #555;
       z-index: 10;  // Above the black keys
       box-shadow: 1px 1px 1px #888;
-      width: @key-width - 1;    // Cut a pixel off of black keys to prevent asymmetry
-      height: @key-width * 4;
+      width: @key-width;    // ...try to cut a pixel off of black keys to prevent asymmetry
+      height: 60%;
 
       // Overlap the adjacent white keys (different amounts depending on where they are on the scale)
-      margin: 0px -0.5*@key-width 0px 1-0.5*@key-width;
+      margin: 0px -0.5*@key-width 0px -0.5*@key-width;
       &.lower {
-        margin: 0px -0.25*@key-width 0px 1-0.75*@key-width;
+        margin: 0px -0.36*@key-width 0px -0.64*@key-width;
       }
       &.higher {
-        margin: 0px -0.75*@key-width 0px 1-0.25*@key-width;
+        margin: 0px -0.64*@key-width 0px -0.36*@key-width;
       }
 
       &.active,
@@ -64,9 +62,13 @@
     }
 
     &.thinner,
-    &:first-child,
+    &:first-child {
+      width: 1.5 * @key-width;     // Certain white keys are sandwiched slightly differently to maintain proportions
+    }
+
     &:last-child {
-      width: 1.5*@key-width;     // Certain white keys are sandwiched slightly differently to maintain proportions
+      float: none;
+      border-right-width: 1px;
     }
   }
 }

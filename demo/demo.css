@@ -55,14 +55,30 @@ ul.feature-list li img {
   margin: auto;
   padding: 0 30px;
 }
+.keyboard {
+  border: 1px solid #888;
+  padding: 10px 10px 0;
+  background: #CCC;
+  z-index: 10;
+}
+.keyboard .key {
+  border-bottom-width: 0 !important;
+}
+#target-wrapper {
+  border: 1px solid #888;
+  border-top-width: 0;
+  padding: 0 10px 10px;
+  background: #CCC;
+  box-shadow: 1px 1px 3px rgba(0,0,0,0.25);
+}
 #target {
   margin: auto;
   border: 1px solid #888;
   width: 100%;
-  height: 400px;
-  box-shadow: 1px 1px 5px rgba(0,0,0,0.25);
+  height: 600px;
   position: relative;
   overflow: hidden;
+  border-top-width: 0px;
 }
 #background {
   position: absolute;
@@ -80,7 +96,7 @@ footer {
   border: 1px solid #888;
   padding: 10px;
   background: #DDD;
-  box-shadow: 1px 1px 5px rgba(0,0,0,0.25);
+  box-shadow: 1px 1px 3px rgba(0,0,0,0.25);
 }
 #transport button {
   float: left;

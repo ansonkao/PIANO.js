@@ -35,8 +35,8 @@ var PIANO = (function(key){
             return null;
 
           // Figure out which note is hovered over (if any)?
-          var timePosition = $.model.xCoordToBar( e.clientX - $.model.canvas.clientXYDirectional('x') );
-          var  keyPosition = $.model.yCoordToKey( e.clientY - $.model.canvas.clientXYDirectional('y') );
+          var timePosition = $.model.yCoordToBar( e.clientY - $.model.canvas.clientXYDirectional('y') );
+          var  keyPosition = $.model.xCoordToKey( e.clientX - $.model.canvas.clientXYDirectional('x') );
           var  hoveredNote = $.model.getHoveredNote(timePosition, keyPosition);
           var  hoverAction = $.model.getHoverAction(timePosition, hoveredNote);
 
@@ -72,8 +72,8 @@ var PIANO = (function(key){
           startEvent = e;
 
           // Figure out which note (if any) is being gripped?
-          var timePosition   = $.model.xCoordToBar( e.clientX - $.model.canvas.clientXYDirectional('x') );
-          var  keyPosition   = $.model.yCoordToKey( e.clientY - $.model.canvas.clientXYDirectional('y') );
+          var timePosition   = $.model.yCoordToBar( e.clientY - $.model.canvas.clientXYDirectional('y') );
+          var  keyPosition   = $.model.xCoordToKey( e.clientX - $.model.canvas.clientXYDirectional('x') );
           currentNote        = $.model.getHoveredNote(timePosition, keyPosition);
           dragAction         = $.model.getHoverAction(timePosition, currentNote);
 
@@ -111,15 +111,15 @@ var PIANO = (function(key){
           {
             case 'mid':
               CurseWords.setExplicitCursor('grab');
-              noteChanges.keyDelta   = $.model.pixelsToKey( e.clientY - startEvent.clientY );
-              noteChanges.startDelta = $.model.pixelsToBar( e.clientX - startEvent.clientX );
+              noteChanges.keyDelta   = $.model.pixelsToKey( e.clientX - startEvent.clientX );
+              noteChanges.startDelta = $.model.pixelsToBar( e.clientY - startEvent.clientY );
               noteChanges.endDelta   = noteChanges.startDelta;
               break;
             case 'min':
-              noteChanges.startDelta = $.model.pixelsToBar( e.clientX - startEvent.clientX );
+              noteChanges.startDelta = $.model.pixelsToBar( e.clientY - startEvent.clientY );
               break;
             case 'max':
-              noteChanges.endDelta   = $.model.pixelsToBar( e.clientX - startEvent.clientX );
+              noteChanges.endDelta   = $.model.pixelsToBar( e.clientY - startEvent.clientY );
               break;
             case 'select':
               showSelectionBox = true;
@@ -145,8 +145,8 @@ var PIANO = (function(key){
               // Adjusted existing note(s) by the mid-body
               if( $.model.isDragging )
               {
-                noteChanges.keyDelta   = $.model.pixelsToKey( e.clientY - startEvent.clientY );
-                noteChanges.startDelta = $.model.pixelsToBar( e.clientX - startEvent.clientX );
+                noteChanges.keyDelta   = $.model.pixelsToKey( e.clientX - startEvent.clientX );
+                noteChanges.startDelta = $.model.pixelsToBar( e.clientY - startEvent.clientY );
                 noteChanges.endDelta   = noteChanges.startDelta;
               }
               // Delete all active notes - no drag so essentially clicked on the active notes
@@ -168,11 +168,11 @@ var PIANO = (function(key){
               break;
             case 'min':
               // Adjusted the start grip of note(s)
-              noteChanges.startDelta = $.model.pixelsToBar( e.clientX - startEvent.clientX );
+              noteChanges.startDelta = $.model.pixelsToBar( e.clientY - startEvent.clientY );
               break;
             case 'max':
               // Adjusted the end grip of note(s)
-              noteChanges.endDelta   = $.model.pixelsToBar( e.clientX - startEvent.clientX );
+              noteChanges.endDelta   = $.model.pixelsToBar( e.clientY - startEvent.clientY );
               break;
             case 'select':
               // Selected note(s) by selection box
@@ -187,13 +187,14 @@ var PIANO = (function(key){
               // Create new note - wasn't a drag a.k.a. basically clicked a blank area when there was no existing selection
               else
               {
-                var timePosition = $.model.xCoordToBar( e.clientX - $.model.canvas.clientXYDirectional('x') );
-                var  keyPosition = $.model.yCoordToKey( e.clientY - $.model.canvas.clientXYDirectional('y') );
+                var timePosition = $.model.yCoordToBar( e.clientY - $.model.canvas.clientXYDirectional('y') );
+                var  keyPosition = $.model.xCoordToKey( e.clientX - $.model.canvas.clientXYDirectional('x') );
                 var newNoteParams = { key:   Math.ceil( keyPosition )
                                     , end:   Math.ceil(  timePosition * 4 ) * 0.25
                                     , start: Math.floor( timePosition * 4 ) * 0.25
                                     };
                 var newNote = new Note(newNoteParams);
+                console.log( e.clientX - $.model.canvas.clientXYDirectional('x'), keyPosition, newNote );
                 $.model.setActiveNotes( newNote );
               }
               break;
@@ -234,28 +235,28 @@ var PIANO = (function(key){
         $.view.renderNotes();
         return false;
       });
-      key('up', function(){ 
+      key('right', function(){ 
         var noteChanges = {keyDelta: 1};
         $.model.adjustActiveNotes(noteChanges);
         $.view.renderFreshGrid();
         $.view.renderNotes();
         return false;
       });
-      key('down', function(){ 
+      key('left', function(){ 
         var noteChanges = {keyDelta: -1};
         $.model.adjustActiveNotes(noteChanges);
         $.view.renderFreshGrid();
         $.view.renderNotes();
         return false;
       });
-      key('left', function(){ 
+      key('up', function(){ 
         var noteChanges = {startDelta: -0.25, endDelta: -0.25};
         $.model.adjustActiveNotes(noteChanges);
         $.view.renderFreshGrid();
         $.view.renderNotes();
         return false;
       });
-      key('right', function(){ 
+      key('down', function(){ 
         var noteChanges = {startDelta: 0.25, endDelta: 0.25};
         $.model.adjustActiveNotes(noteChanges);
         $.view.renderFreshGrid();
@@ -342,15 +343,15 @@ var PIANO = (function(key){
   $.model.getKeyRange         = function(){ return $.model.keyScale.max  - $.model.keyScale.min;  };
   $.model.percentToKey        = function(percent){ return Math.ceil( percent * $.model.keyboardSize ); }; // Where percent is between 0.000 and 1.000
   $.model.percentToBar        = function(percent){ return Math.ceil( percent * $.model.clipLength   ); }; // Where percent is between 0.000 and 1.000
-  $.model.barToPixels         = function(bar){ return ( ( bar / $.model.clipLength   )                         ) / $.model.getTimeRange() * $.model.width;  };
-  $.model.keyToPixels         = function(key){ return ( ( key / $.model.keyboardSize )                         ) / $.model.getKeyRange()  * $.model.height; };
-  $.model.barToXCoord         = function(bar){ return ( ( bar / $.model.clipLength   ) - $.model.timeScale.min ) / $.model.getTimeRange() * $.model.width;  };
-  $.model.keyToYCoord         = function(key){ return ( ( key / $.model.keyboardSize ) - $.model.keyScale.min  ) / $.model.getKeyRange()  * $.model.height; };
-  $.model.pixelsToBar         = function(pixels){ return (          ( pixels ) / $.model.width * $.model.getTimeRange()                          ) * $.model.clipLength;   };
-  $.model.pixelsToKey         = function(pixels){ return (  0.0 - ( ( pixels ) / $.model.height * $.model.getKeyRange()                        ) ) * $.model.keyboardSize; };
-  $.model.xCoordToBar         = function(xCoord){ return (          ( xCoord ) / $.model.width * $.model.getTimeRange() + $.model.timeScale.min  ) * $.model.clipLength;   };
-  $.model.yCoordToKey         = function(yCoord){ return (  1.0 - ( ( yCoord ) / $.model.height * $.model.getKeyRange() + $.model.keyScale.min ) ) * $.model.keyboardSize; };
-  $.model.setViewport         = function(timeScaleMin, timeScaleMax, keyScaleMin, keyScaleMax)
+  $.model.barToPixels         = function(bar){ return ( (     bar  / $.model.clipLength   )                         ) / $.model.getTimeRange() * $.model.height; };
+  $.model.keyToPixels         = function(key){ return ( ( (88-key) / $.model.keyboardSize )                         ) / $.model.getKeyRange()  * $.model.width;  };
+  $.model.barToYCoord         = function(bar){ return ( (     bar  / $.model.clipLength   ) - $.model.timeScale.min ) / $.model.getTimeRange() * $.model.height; };
+  $.model.keyToXCoord         = function(key){ return ( ( (88-key) / $.model.keyboardSize ) - $.model.keyScale.min  ) / $.model.getKeyRange()  * $.model.width;  };
+  $.model.pixelsToBar         = function(pixels){ return (         ( pixels ) / $.model.height * $.model.getTimeRange()                          ) * $.model.clipLength;   };
+  $.model.pixelsToKey         = function(pixels){ return ( 0.0 + ( ( pixels ) / $.model.width  * $.model.getKeyRange()                         ) ) * $.model.keyboardSize; };
+  $.model.yCoordToBar         = function(yCoord){ return (         ( yCoord ) / $.model.height * $.model.getTimeRange() + $.model.timeScale.min  ) * $.model.clipLength;   };
+  $.model.xCoordToKey         = function(xCoord){ return ( 0.0 + ( ( xCoord ) / $.model.width  * $.model.getKeyRange()  + $.model.keyScale.min ) ) * $.model.keyboardSize; };
+  $.model.setViewport         = function(keyScaleMin, keyScaleMax, timeScaleMin, timeScaleMax)
     {
       // Update Viewport params
       $.model.resize();
@@ -522,10 +523,10 @@ var PIANO = (function(key){
   $.model.selectNotesInBox    = function(startEvent, endEvent)
     {
       // Given a 2 mouse events, set all the notes intersecting the resultant bounding box as selected
-      var bar1 = this.xCoordToBar( startEvent.clientX - this.canvas.clientXYDirectional('x') );
-      var key1 = this.yCoordToKey( startEvent.clientY - this.canvas.clientXYDirectional('y') );
-      var bar2 = this.xCoordToBar(   endEvent.clientX - this.canvas.clientXYDirectional('x') );
-      var key2 = this.yCoordToKey(   endEvent.clientY - this.canvas.clientXYDirectional('y') );
+      var bar1 = this.yCoordToBar( startEvent.clientY - this.canvas.clientXYDirectional('y') );
+      var key1 = this.xCoordToKey( startEvent.clientX - this.canvas.clientXYDirectional('x') );
+      var bar2 = this.yCoordToBar(   endEvent.clientY - this.canvas.clientXYDirectional('y') );
+      var key2 = this.xCoordToKey(   endEvent.clientX - this.canvas.clientXYDirectional('x') );
       var barMin = bar1 < bar2 ? bar1 : bar2;
       var barMax = bar1 > bar2 ? bar1 : bar2;
       var keyMin = key1 < key2 ? key1 : key2;
@@ -571,16 +572,16 @@ var PIANO = (function(key){
       var maxKey = $.model.percentToKey( $.model.keyScale.max );
       for( var key = minKey; key <= maxKey; key++ )
       {
-        var prevEdge = Math.closestHalfPixel( $.model.keyToYCoord( key - 1 ) );
-        var nextEdge = Math.closestHalfPixel( $.model.keyToYCoord( key     ) );
+        var prevEdge = Math.closestHalfPixel( $.model.keyToXCoord( key - 1 ) );
+        var nextEdge = Math.closestHalfPixel( $.model.keyToXCoord( key     ) );
 
         // Stroke the edge between rows
         if( prevEdge > 0.5 ) // Skip first edge (we have a border to serve that purpose)
-          $.model.canvasContext.drawLine( 0, prevEdge, $.model.width, prevEdge, false );
+          $.model.canvasContext.drawLine( prevEdge, 0, prevEdge, $.model.height, false );
 
         // Fill the row for the black keys
         if( key % 12 in {3:true, 5:true, 7:true, 10:true, 0:true} )
-          $.model.canvasContext.fillRect( 0, nextEdge, $.model.width, prevEdge - nextEdge );
+          $.model.canvasContext.fillRect( nextEdge, 0, prevEdge - nextEdge, $.model.height );
       }
 
       // Stroke it all at the end!
@@ -601,8 +602,8 @@ var PIANO = (function(key){
         $.model.canvasContext.beginPath();
         $.model.canvasContext.strokeStyle = ( bar % 1 ) ? "#CCD" : "#AAB";
 
-        var xPosition = Math.closestHalfPixel( $.model.barToXCoord( bar ) );
-        $.model.canvasContext.drawLine( xPosition, 0, xPosition, $.model.height );
+        var yPosition = Math.closestHalfPixel( $.model.barToYCoord( bar ) );
+        $.model.canvasContext.drawLine( 0, yPosition, $.model.width, yPosition );
 
         // Draw each line (different colors)
         $.model.canvasContext.stroke();
@@ -645,12 +646,12 @@ var PIANO = (function(key){
     };
   $.view.renderSingleNote = function(note)
     {
-      var x1 = Math.closestHalfPixel( $.model.barToXCoord( note.start ) );
-      var x2 = Math.closestHalfPixel( $.model.barToXCoord( note.end   ) );
-      var y1 = Math.closestHalfPixel( $.model.keyToYCoord( $.model.keyboardSize - note.key ) );
-      var y2 = Math.closestHalfPixel( $.model.keyToYCoord( $.model.keyboardSize - note.key  + 1 ) );
-      $.model.canvasContext.fillRect  ( x1 + 1, y1 + 2, x2 - x1 - 3, y2 - y1 - 4 );
-      $.model.canvasContext.strokeRect( x1 + 0, y1 + 1, x2 - x1 - 1, y2 - y1 - 2 );
+      var y1 = Math.closestHalfPixel( $.model.barToYCoord( note.start ) );
+      var y2 = Math.closestHalfPixel( $.model.barToYCoord( note.end   ) );
+      var x1 = Math.closestHalfPixel( $.model.keyToXCoord( $.model.keyboardSize - note.key     ) );
+      var x2 = Math.closestHalfPixel( $.model.keyToXCoord( $.model.keyboardSize - note.key + 1 ) );
+      $.model.canvasContext.fillRect  ( x1 - 2, y1 + 1, x2 - x1 + 4, y2 - y1 - 3 );
+      $.model.canvasContext.strokeRect( x1 - 1, y1 + 0, x2 - x1 + 2, y2 - y1 - 1 );
     };
   $.view.renderSelectBox  = function(startEvent,endEvent)
     {

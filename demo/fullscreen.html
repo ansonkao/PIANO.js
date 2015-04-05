@@ -1,34 +1,17 @@
 <html>
 <head>
 
-  <title>PIANO.js</title>
+  <title>Browser-based MIDI Sequencer</title>
 
   <link rel="icon" type="img/ico" href="favicon.ico">
   <link rel="stylesheet" href="../dist/PIANO.css">
-  <link rel="stylesheet" href="demo.css">
-  <link rel="stylesheet" href="http://yandex.st/highlightjs/7.5/styles/github.min.css?ver=3.6.1">
-  <script type="text/javascript" src="http://yandex.st/highlightjs/7.5/highlight.min.js"></script>
-  <script type="text/javascript">
-    hljs.initHighlightingOnLoad();
-  </script>
+  <link rel="stylesheet" href="fullscreen.css">
 
 </head>
 <body>
 
   <header>
-    <div class="container">
-
-      <h1 class="text-center">PIANO.js</h1>
-      <h2 class="text-center">A browser-based MIDI sequencer.</h2>
-      <a href="https://github.com/ansonkao/PIANO.js">
-        <img style="position: absolute; top: 0; right: 0; border: 0;"
-             src="https://camo.githubusercontent.com/a6677b08c955af8400f44c6298f40e7d19cc5b2d/68747470733a2f2f73332e616d617a6f6e6177732e636f6d2f6769746875622f726962626f6e732f666f726b6d655f72696768745f677261795f3664366436642e706e67"
-             alt="Fork me on GitHub"
-             data-canonical-src="https://s3.amazonaws.com/github/ribbons/forkme_right_gray_6d6d6d.png"
-        >
-      </a>
-
-    </div>
+    <h1>A browser-based MIDI sequencer.</h1>
   </header>
 
   <main>
@@ -125,25 +108,40 @@
         <div note="21"  class="key white regular"></div>
       </div>
 
-      <div id="target-wrapper">
-        <div id="target" class="gripscroll">
-        </div>
+      <div id="target" class="gripscroll">
       </div>
-
-      <footer>
-        <div id="transport">
-          <button id="play"><span class="icon" style="color: #080;">&#9658;</span></button>
-          <button id="stop"><span class="icon" style="color: #000;">&#8718;</span></button>
-          <input id="tempo" type="number" step="1" value="105" />
-          <input id="note_velocity" type="number" step="1" value="50" />
-        </div>
-      </footer>
 
     </div>
   </main>
 
   <script lang="text/javascript" src="../dist/PIANO.js"></script>
   <script lang="text/javascript">
+
+    var myitem = document.querySelector('body');
+    if (myitem.addEventListener)
+    {
+      // IE9, Chrome, Safari, Opera
+      myitem.addEventListener("mousewheel", MouseWheelHandler, false);
+      // Firefox
+      myitem.addEventListener("DOMMouseScroll", MouseWheelHandler, false);
+    }
+    // IE 6/7/8
+    else
+    {
+      myitem.attachEvent("onmousewheel", MouseWheelHandler);
+    }
+
+    function MouseWheelHandler(e)
+    {
+      // cross-browser wheel delta
+      var e = window.event || e; // old IE support
+      var delta = Math.max(-1, Math.min(1, (e.wheelDelta || -e.detail)));
+
+      console.log( delta, e );
+
+      return false;
+    }
+
     var pianoParams = {};
         pianoParams.notes = [ new Note({ key: 56, start: 0.000, end: 0.105, velocity: 64 })
                             , new Note({ key: 56, start: 0.125, end: 0.230, velocity: 64 })

@@ -1,4 +1,4 @@
-@num-keys: 88.75;
+@num-keys: 88.225;
 @key-width: 100% / @num-keys;
 
 .keyboard {
@@ -8,7 +8,7 @@
   overflow: hidden;
 
   height: 50px;                   // AUTOMATE THIS TO AN ASPECT RATIO!
-  box-shadow: 0px 0px 4px #555;
+  box-shadow: 1px 1px 5px rgba(0,0,0,0.25);
 
   .key {
     display: block;
@@ -39,7 +39,7 @@
       z-index: 10;  // Above the black keys
       box-shadow: 1px 1px 1px #888;
       width: @key-width;    // ...try to cut a pixel off of black keys to prevent asymmetry
-      height: 60%;
+      height: 75%;
 
       // Overlap the adjacent white keys (different amounts depending on where they are on the scale)
       margin: 0px -0.5*@key-width 0px -0.5*@key-width;
@@ -61,14 +61,17 @@
       border-right-width: 1px;
     }
 
-    &.thinner,
-    &:first-child {
+    &.thinner {
       width: 1.5 * @key-width;     // Certain white keys are sandwiched slightly differently to maintain proportions
     }
 
+    &:first-child {
+      width: 1.175 * @key-width;
+    }
     &:last-child {
       float: none;
       border-right-width: 1px;
+      width: 1.50 * @key-width;
     }
   }
 }

@@ -23,7 +23,7 @@
     "tests"
   ],
   "devDependencies": {
-    "keymaster": "~1.6.2",
-    "gripscroll": "~0.2.0"
+    "keymaster": "1.6.3",
+    "gripscroll": "0.3.0"
   }
 }

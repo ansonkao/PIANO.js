@@ -48,8 +48,8 @@ var PIANO = (function(key){
           var newCursor = null;
           switch( hoverAction )
           {
-            case 'min': newCursor = 'xresize'; break;
-            case 'max': newCursor = 'xresize'; break;
+            case 'min': newCursor = 'yresize'; break;
+            case 'max': newCursor = 'yresize'; break;
             case 'mid': newCursor = 'default'; break;
                default: newCursor = 'default';
           }
@@ -303,7 +303,7 @@ var PIANO = (function(key){
   $.model.canvas              = null;
   $.model.canvasContext       = null;
   $.model.keyboardSize        = 88;    // 88 keys in a piano
-  $.model.clipLength          = 16;    // ...in bars. 2.125 means 2 bars and 1/8th note long
+  $.model.clipLength          = 8;    // ...in bars. 2.125 means 2 bars and 1/8th note long
   $.model.width               = null;
   $.model.height              = null;
   $.model.timeScale           = { min: 0.500, max: 1.000 };
@@ -553,7 +553,7 @@ var PIANO = (function(key){
     {
       // Render a plain pianoroll
       $.model.canvasContext.clear();
-      $.model.canvasContext.backgroundFill('#EEEEEE');
+      $.model.canvasContext.backgroundFill('#789');
 
       // Render it!
       $.view.renderKeyScale();
@@ -564,8 +564,8 @@ var PIANO = (function(key){
       // Styles
       $.model.canvasContext.lineWidth   = 1.0;
       $.model.canvasContext.setLineDash([]);
-      $.model.canvasContext.strokeStyle = "#D4D4E0";
-      $.model.canvasContext.fillStyle   = "#DDDDE4";
+      $.model.canvasContext.strokeStyle = "#567";
+      $.model.canvasContext.fillStyle   = "#678";
 
       // Each edge + black key fills
       var minKey = $.model.percentToKey( $.model.keyScale.min );
@@ -600,7 +600,7 @@ var PIANO = (function(key){
       {
         // Start each line as a separate path (different colors)
         $.model.canvasContext.beginPath();
-        $.model.canvasContext.strokeStyle = ( bar % 1 ) ? "#CCD" : "#AAB";
+        $.model.canvasContext.strokeStyle = ( bar % 1 ) ? "#567" : "#234";
 
         var yPosition = Math.closestHalfPixel( $.model.barToYCoord( bar ) );
         $.model.canvasContext.drawLine( 0, yPosition, $.model.width, yPosition );
@@ -626,18 +626,18 @@ var PIANO = (function(key){
               previewNote.start = params && params.startDelta ? $.model.notes[i].start + params.startDelta : $.model.notes[i].start;
               previewNote.key   = params && params.keyDelta   ? $.model.notes[i].key   + params.keyDelta   : $.model.notes[i].key;
               previewNote.end   = params && params.endDelta   ? $.model.notes[i].end   + params.endDelta   : $.model.notes[i].end;
-          $.model.canvasContext.strokeStyle = "#401";
-          $.model.canvasContext.fillStyle   = "#812";
+          $.model.canvasContext.strokeStyle = "#000";
+          $.model.canvasContext.fillStyle   = "#CFD";
           $.view.renderSingleNote( previewNote );
         }
         else
         {
           var intensityFactor = $.model.notes[i].velocity / $.model.maxVelocity;
-          var r = Math.floor( 215 +  32*intensityFactor );
-          var g = Math.floor( 160 - 144*intensityFactor );
-          var b = Math.floor( 160 - 128*intensityFactor );
-          $.model.canvasContext.strokeStyle = "#812";
-          $.model.canvasContext.fillStyle   = "#" + r.toString(16) + g.toString(16) + b.toString(16);
+          var r = Math.floor(   0 +   0*intensityFactor );
+          var g = Math.floor( 127 + 128*intensityFactor );
+          var b = Math.floor(   0 +   0*intensityFactor );
+          $.model.canvasContext.strokeStyle = "#000";
+          $.model.canvasContext.fillStyle   = "rgba("+r+','+g+','+b+',1)';
           $.view.renderSingleNote( $.model.notes[i] );
         }
 

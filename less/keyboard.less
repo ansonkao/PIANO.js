@@ -1,4 +1,4 @@
-@num-keys: 88.225;
+@num-keys: 88.00;
 @key-width: 100% / @num-keys;
 
 .keyboard {
@@ -7,8 +7,7 @@
   box-sizing: content-box;
   overflow: hidden;
 
-  height: 50px;                   // AUTOMATE THIS TO AN ASPECT RATIO!
-  box-shadow: 1px 1px 5px rgba(0,0,0,0.25);
+  height: 150px;                   // AUTOMATE THIS TO AN ASPECT RATIO!
 
   .key {
     display: block;
@@ -21,11 +20,12 @@
     height: 100%;
 
     &.white {
-      border: 1px solid #888;
+      border: 1px solid #000;
       background: #FFF;
       z-index: 5;   // Above the shadow but below the black keys
       width: 1.75*@key-width;   // Make white keys wider
       border-right-width: 0px;
+      border-radius: 0 0 3px 3px;
 
       &.active,
       &:active {
@@ -34,26 +34,28 @@
       }
     }
     &.black {
-      border: 1px solid #222;
+      border: solid #000;
+      border-width: 1px 2px 10px 2px;
+      border-radius: 0 0 3px 3px;
       background: #555;
       z-index: 10;  // Above the black keys
       box-shadow: 1px 1px 1px #888;
       width: @key-width;    // ...try to cut a pixel off of black keys to prevent asymmetry
-      height: 75%;
+      height: 69%;
 
       // Overlap the adjacent white keys (different amounts depending on where they are on the scale)
       margin: 0px -0.5*@key-width 0px -0.5*@key-width;
       &.lower {
-        margin: 0px -0.36*@key-width 0px -0.64*@key-width;
+        margin: 0px -0.25*@key-width 0px -0.75*@key-width;
       }
       &.higher {
-        margin: 0px -0.64*@key-width 0px -0.36*@key-width;
+        margin: 0px -0.75*@key-width 0px -0.25*@key-width;
       }
 
       &.active,
       &:active {
         background: #800;
-        box-shadow: inset 1px -1px #300;
+        box-shadow: none;
       }
     }
 
@@ -66,12 +68,14 @@
     }
 
     &:first-child {
-      width: 1.175 * @key-width;
+      width: 1.050 * @key-width;
+      border-radius: 0 3px 3px 3px;
     }
     &:last-child {
       float: none;
+      border-radius: 3px 0 3px 3px;
       border-right-width: 1px;
-      width: 1.50 * @key-width;
+      width: 1.300 * @key-width;
     }
   }
 }

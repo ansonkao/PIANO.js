@@ -314,6 +314,7 @@ var PIANO = (function(key){
   $.model.maxVelocity         = 127;
   $.model.minVelocity         = 0;
   $.model.velocityRange       = $.model.maxVelocity - $.model.minVelocity;
+  $.model.pixelScale          = window.devicePixelRatio || 1;
   $.model.initialize          = function(container, params)
     {
       // Canvas
@@ -321,6 +322,7 @@ var PIANO = (function(key){
       $.model.canvas           = container.appendChild( document.createElement('canvas') );
       $.model.canvas.className = 'piano-canvas';
       $.model.canvasContext    = $.model.canvas.getContext("2d");
+      $.model.canvasContext.scale( $.model.pixelScale, $.model.pixelScale );
 
       // Notes
       $.model.notes = params.notes;
@@ -332,8 +334,8 @@ var PIANO = (function(key){
   $.model.resize              = function()
     {
       // Reset dimensions
-      $.model.canvas.width  = $.model.width  = $.model.container.clientWidth;
-      $.model.canvas.height = $.model.height = $.model.container.clientHeight;
+      $.model.canvas.width  = $.model.width  = $.model.container.clientWidth  * $.model.pixelScale;
+      $.model.canvas.height = $.model.height = $.model.container.clientHeight * $.model.pixelScale;
         /* ^ clientWidth/clientHeight return rounded integer value from the parent
          * wrapper. If we use getBoundingClientRect() instead, we'll get non-integer
          * values and the discrepancy will lead to sub-pixel blending and fuzzy lines.
@@ -347,10 +349,10 @@ var PIANO = (function(key){
   $.model.keyToPixels         = function(key){ return ( ( (88-key) / $.model.keyboardSize )                         ) / $.model.getKeyRange()  * $.model.width;  };
   $.model.barToYCoord         = function(bar){ return ( (     bar  / $.model.clipLength   ) - $.model.timeScale.min ) / $.model.getTimeRange() * $.model.height; };
   $.model.keyToXCoord         = function(key){ return ( ( (88-key) / $.model.keyboardSize ) - $.model.keyScale.min  ) / $.model.getKeyRange()  * $.model.width;  };
-  $.model.pixelsToBar         = function(pixels){ return (         ( pixels ) / $.model.height * $.model.getTimeRange()                          ) * $.model.clipLength;   };
-  $.model.pixelsToKey         = function(pixels){ return ( 0.0 + ( ( pixels ) / $.model.width  * $.model.getKeyRange()                         ) ) * $.model.keyboardSize; };
-  $.model.yCoordToBar         = function(yCoord){ return (         ( yCoord ) / $.model.height * $.model.getTimeRange() + $.model.timeScale.min  ) * $.model.clipLength;   };
-  $.model.xCoordToKey         = function(xCoord){ return ( 0.0 + ( ( xCoord ) / $.model.width  * $.model.getKeyRange()  + $.model.keyScale.min ) ) * $.model.keyboardSize; };
+  $.model.pixelsToBar         = function(pixels){ return (         ( pixels ) / $.model.height * $.model.pixelScale * $.model.getTimeRange()                          ) * $.model.clipLength;   };
+  $.model.pixelsToKey         = function(pixels){ return ( 0.0 + ( ( pixels ) / $.model.width  * $.model.pixelScale * $.model.getKeyRange()                         ) ) * $.model.keyboardSize; };
+  $.model.yCoordToBar         = function(yCoord){ return (         ( yCoord ) / $.model.height * $.model.pixelScale * $.model.getTimeRange() + $.model.timeScale.min  ) * $.model.clipLength;   };
+  $.model.xCoordToKey         = function(xCoord){ return ( 0.0 + ( ( xCoord ) / $.model.width  * $.model.pixelScale * $.model.getKeyRange()  + $.model.keyScale.min ) ) * $.model.keyboardSize; };
   $.model.setViewport         = function(keyScaleMin, keyScaleMax, timeScaleMin, timeScaleMax)
     {
       // Update Viewport params
@@ -655,10 +657,10 @@ var PIANO = (function(key){
     };
   $.view.renderSelectBox  = function(startEvent,endEvent)
     {
-      var x0 = Math.closestHalfPixel( startEvent.clientX - $.model.canvas.clientXYDirectional('x') );
-      var y0 = Math.closestHalfPixel( startEvent.clientY - $.model.canvas.clientXYDirectional('y') );
-      var width  = Math.round( endEvent.clientX - startEvent.clientX );
-      var height = Math.round( endEvent.clientY - startEvent.clientY );
+      var x0 = Math.closestHalfPixel( ( startEvent.clientX - $.model.canvas.clientXYDirectional('x') ) * $.model.pixelScale );
+      var y0 = Math.closestHalfPixel( ( startEvent.clientY - $.model.canvas.clientXYDirectional('y') ) * $.model.pixelScale );
+      var width  = Math.round( ( endEvent.clientX - startEvent.clientX) * $.model.pixelScale );
+      var height = Math.round( ( endEvent.clientY - startEvent.clientY) * $.model.pixelScale );
       $.model.canvasContext.beginPath();
       $.model.canvasContext.lineWidth   = 1.0;
     //$.model.canvasContext.setLineDash([1,2]);

@@ -82,7 +82,7 @@ var PIANO = (function(key){
           {
             case 'mid': CurseWords.setExplicitCursor('default'); break;
             case 'min':
-            case 'max': CurseWords.setExplicitCursor('xresize');  break;
+            case 'max': CurseWords.setExplicitCursor('yresize');  break;
             case 'select':
           }
 
@@ -479,8 +479,8 @@ var PIANO = (function(key){
         return 'select';
 
            if( $.model.barToPixels(     hoveredNote.end   - hoveredNote.start ) < 15 ) return 'mid';
-      else if( $.model.barToPixels( -1* hoveredNote.start + timePositionBars  ) <  4 ) return 'min';
-      else if( $.model.barToPixels(     hoveredNote.end   - timePositionBars  ) <  4 ) return 'max';
+      else if( $.model.barToPixels( -1* hoveredNote.start + timePositionBars  ) <  5 ) return 'min';
+      else if( $.model.barToPixels(     hoveredNote.end   - timePositionBars  ) <  5 ) return 'max';
       else                                                                             return 'mid';
     };
   $.model.snapNoteChanges     = function(delta, targetNote)

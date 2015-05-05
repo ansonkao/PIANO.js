@@ -229,7 +229,7 @@ var PIANO = (function(key){
         }
         return false;
       });
-      key('del', function(){ 
+      key('del, backspace', function(){ 
         $.model.deleteActiveNotes();
         $.view.renderFreshGrid();
         $.view.renderNotes();

@@ -1,5 +1,14 @@
 module.exports = function(grunt) {
 
+  // Load custom configs
+  try {
+    CONFIG = grunt.file.readJSON('config.json');
+  } catch (e) {
+    console.log( e );
+    grunt.log.error("No 'config.json' found - using defaults. Format: {'HOST': 'foo.bar', ...}.");
+    CONFIG = {};
+  };
+
   // Configuration
   grunt.initConfig({
     pkg: grunt.file.readJSON('package.json'),
@@ -48,6 +57,18 @@ module.exports = function(grunt) {
           "uglify"
         ]
       }
+    },
+    'http-server': {
+      'dev': {
+        root: '',
+        port: CONFIG.PORT || 80,
+        host: CONFIG.HOST || 'localhost',
+        cache: 0,
+        showDir: true,
+        autoIndex: true,
+        ext: "html",
+        runInBackground: true
+      }
     }
   });
 
@@ -56,8 +77,10 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-contrib-jshint');
   grunt.loadNpmTasks('grunt-contrib-uglify');
   grunt.loadNpmTasks('grunt-contrib-watch');
+  grunt.loadNpmTasks('grunt-http-server');
 
   // Commands
-  grunt.registerTask('default', ['less', 'jshint', 'uglify']);
+  grunt.registerTask('default', ['http-server', 'less', 'jshint', 'uglify', 'watch']);
+  grunt.registerTask('dev', ['http-server', 'watch']);
 
 };

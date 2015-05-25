@@ -3,6 +3,7 @@ var Transport = (function(){
   var keyFrequency = [];
   var oscillator = [];
   var bpm = 105;
+  var AudioContext = window.AudioContext || window.webkitAudioContext;
   var ctx = new AudioContext();
   var masterVolume = ctx.createGain();
 

@@ -24,6 +24,6 @@
   ],
   "devDependencies": {
     "keymaster": "1.6.3",
-    "gripscroll": "0.3.0"
+    "gripscroll": "0.3.3"
   }
 }

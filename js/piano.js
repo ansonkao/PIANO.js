@@ -345,10 +345,10 @@ var PIANO = (function(key){
   $.model.getKeyRange         = function(){ return $.model.keyScale.max  - $.model.keyScale.min;  };
   $.model.percentToKey        = function(percent){ return Math.ceil( percent * $.model.keyboardSize ); }; // Where percent is between 0.000 and 1.000
   $.model.percentToBar        = function(percent){ return Math.ceil( percent * $.model.clipLength   ); }; // Where percent is between 0.000 and 1.000
-  $.model.barToPixels         = function(bar){ return ( (     bar  / $.model.clipLength   )                         ) / $.model.getTimeRange() * $.model.height; };
-  $.model.keyToPixels         = function(key){ return ( ( (88-key) / $.model.keyboardSize )                         ) / $.model.getKeyRange()  * $.model.width;  };
-  $.model.barToYCoord         = function(bar){ return ( (     bar  / $.model.clipLength   ) - $.model.timeScale.min ) / $.model.getTimeRange() * $.model.height; };
-  $.model.keyToXCoord         = function(key){ return ( ( (88-key) / $.model.keyboardSize ) - $.model.keyScale.min  ) / $.model.getKeyRange()  * $.model.width;  };
+  $.model.barToPixels         = function(bar){ return ( ( bar / $.model.clipLength   )                         ) / $.model.getTimeRange() * $.model.height; };
+  $.model.keyToPixels         = function(key){ return ( ( key / $.model.keyboardSize )                         ) / $.model.getKeyRange()  * $.model.width;  };
+  $.model.barToYCoord         = function(bar){ return ( ( bar / $.model.clipLength   ) - $.model.timeScale.min ) / $.model.getTimeRange() * $.model.height; };
+  $.model.keyToXCoord         = function(key){ return ( ( key / $.model.keyboardSize ) - $.model.keyScale.min  ) / $.model.getKeyRange()  * $.model.width;  };
   $.model.pixelsToBar         = function(pixels){ return (         ( pixels ) / $.model.height * $.model.pixelScale * $.model.getTimeRange()                          ) * $.model.clipLength;   };
   $.model.pixelsToKey         = function(pixels){ return ( 0.0 + ( ( pixels ) / $.model.width  * $.model.pixelScale * $.model.getKeyRange()                         ) ) * $.model.keyboardSize; };
   $.model.yCoordToBar         = function(yCoord){ return (         ( yCoord ) / $.model.height * $.model.pixelScale * $.model.getTimeRange() + $.model.timeScale.min  ) * $.model.clipLength;   };
@@ -650,10 +650,10 @@ var PIANO = (function(key){
     {
       var y1 = Math.closestHalfPixel( $.model.barToYCoord( note.start ) );
       var y2 = Math.closestHalfPixel( $.model.barToYCoord( note.end   ) );
-      var x1 = Math.closestHalfPixel( $.model.keyToXCoord( $.model.keyboardSize - note.key     ) );
-      var x2 = Math.closestHalfPixel( $.model.keyToXCoord( $.model.keyboardSize - note.key + 1 ) );
-      $.model.canvasContext.fillRect  ( x1 - 2, y1 + 1, x2 - x1 + 4, y2 - y1 - 3 );
-      $.model.canvasContext.strokeRect( x1 - 1, y1 + 0, x2 - x1 + 2, y2 - y1 - 1 );
+      var x1 = Math.closestHalfPixel( $.model.keyToXCoord( note.key - 1 ) );
+      var x2 = Math.closestHalfPixel( $.model.keyToXCoord( note.key     ) );
+      $.model.canvasContext.fillRect  ( x1 + 1, y1 + 1, x2 - x1 - 3, y2 - y1 - 3 );
+      $.model.canvasContext.strokeRect( x1 + 0, y1 + 0, x2 - x1 - 1, y2 - y1 - 1 );
     };
   $.view.renderSelectBox  = function(startEvent,endEvent)
     {

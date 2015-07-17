@@ -317,6 +317,9 @@ var PIANO = (function(key){
   $.model.pixelScale          = window.devicePixelRatio || 1;
   $.model.initialize          = function(container, params)
     {
+      // Options
+      $.model.clipLength = params.clipLength || 8;
+
       // Canvas
       $.model.container        = container;
       $.model.canvas           = container.appendChild( document.createElement('canvas') );
@@ -574,15 +577,15 @@ var PIANO = (function(key){
       var maxKey = $.model.percentToKey( $.model.keyScale.max );
       for( var key = minKey; key <= maxKey; key++ )
       {
-        var prevEdge = Math.closestHalfPixel( $.model.keyToXCoord( key - 1 ) );
-        var nextEdge = Math.closestHalfPixel( $.model.keyToXCoord( key     ) );
+        var prevEdge = Math.closestHalfPixel( $.model.keyToXCoord( key - 1 ) ) + 1;   // Extra pixel to account for stroke width
+        var nextEdge = Math.closestHalfPixel( $.model.keyToXCoord( key     ) ) + 1;   // Extra pixel to account for stroke width
 
         // Stroke the edge between rows
         if( prevEdge > 0.5 ) // Skip first edge (we have a border to serve that purpose)
           $.model.canvasContext.drawLine( prevEdge, 0, prevEdge, $.model.height, false );
 
         // Fill the row for the black keys
-        if( key % 12 in {3:true, 5:true, 7:true, 10:true, 0:true} )
+        if( key % 12 in {0:true, 2:true, 5: true, 7: true, 10: true} )
           $.model.canvasContext.fillRect( nextEdge, 0, prevEdge - nextEdge, $.model.height );
       }
 
@@ -652,8 +655,8 @@ var PIANO = (function(key){
       var y2 = Math.closestHalfPixel( $.model.barToYCoord( note.end   ) );
       var x1 = Math.closestHalfPixel( $.model.keyToXCoord( note.key - 1 ) );
       var x2 = Math.closestHalfPixel( $.model.keyToXCoord( note.key     ) );
-      $.model.canvasContext.fillRect  ( x1 + 1, y1 + 1, x2 - x1 - 3, y2 - y1 - 3 );
-      $.model.canvasContext.strokeRect( x1 + 0, y1 + 0, x2 - x1 - 1, y2 - y1 - 1 );
+      $.model.canvasContext.fillRect  ( x1 + 2, y1 + 1, x2 - x1 - 3, y2 - y1 - 3 );
+      $.model.canvasContext.strokeRect( x1 + 1, y1 + 0, x2 - x1 - 1, y2 - y1 - 1 );
     };
   $.view.renderSelectBox  = function(startEvent,endEvent)
     {

@@ -42,8 +42,8 @@
         </div>
       </div>
 
-      <div class="keyboard">
-        <div class="keybed">
+      <div id="keyboard" class="keyboard">
+        <div id="keybed" class="keybed">
           <div note="108" class="key white regular"></div>
           <div note="107" class="key white regular"></div>
           <div note="106" class="key black higher "></div>
@@ -150,6 +150,7 @@
   <script lang="text/javascript" src="../dist/PIANO.js"></script>
   <script lang="text/javascript">
     var pianoParams = {};
+    /*
         pianoParams.notes = [ new Note({ key: 56, start: 0.000, end: 0.105, velocity: 127 })
                             , new Note({ key: 56, start: 0.125, end: 0.230, velocity: 127 })
                             , new Note({ key: 30, start: 0.000, end: 0.105, velocity: 127 })
@@ -223,16 +224,29 @@
                             , new Note({ key: 51, start: 4.813, end: 4.875, velocity: 127 })
                             , new Note({ key: 44, start: 4.813, end: 4.875, velocity: 127 })
                             ];
+                            */
+        pianoParams.clipLength = 4;
+
     var scrollParams = { x: {min: 0.000, max: 0.000 }
-                       , y: {min: 0.000, max: 0.125 }
+                       , y: {min: 0.000, max: 0.250 }
+                       , smallestZoomX: 0.5
+                       , smallestZoomY: 0.0306125
                        };
 
-    var target = document.getElementById('target');
+    var target   = document.getElementById('target');
+    var keyboard = document.getElementById('keyboard');
+    var keybed   = document.getElementById('keybed');
 
          PIANO.initialize( target, pianoParams  );
     GripScroll.add( target, scrollParams );
 
     GripScroll.triggerUpdate( target );
+
+    target.addEventListener('gripscroll-update', function(e){
+      var visibleRatio = e.gripScrollX.max - e.gripScrollX.min;
+      keybed.style.marginLeft  = "-" + (        e.gripScrollX.min   * 100.0 / visibleRatio ) + "%";
+      keybed.style.marginRight = "-" + ( (1.0 - e.gripScrollX.max ) * 100.0 / visibleRatio ) + "%";
+    });
 
     // Hookup Transport UI to Transport Controller
     document.getElementById("play" ).addEventListener('click' , function(e){ Transport.play(); e.preventDefault(); });

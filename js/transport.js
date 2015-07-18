@@ -3,6 +3,7 @@ var Transport = (function(){
   var keyFrequency = [];
   var oscillators = [];
   var amplitudeEnvelopes = [];
+  var filterEnvelopes = [];
   var bpm = 105;
   var AudioContext = window.AudioContext || window.webkitAudioContext;
   var ctx = new AudioContext();
@@ -96,10 +97,10 @@ var Transport = (function(){
         PIANO.refreshView();
         var startTime = getPlayTime( notes[0].start + loop*barsPerLoop, playStart );
         var   endTime = getPlayTime( notes[0].end   + loop*barsPerLoop, playStart );
-        while( startTime < ctx.currentTime + 0.40 )
+        while( startTime <= ctx.currentTime + 0.40 )
         {
           PIANO.renderLiveNote( notes[0] ); // REALLY BAD!!! TIGHTLY COUPLED, BREAK OUT VIA PUB SUB PATTERN
-          playSingleNote( notes[0].key, notes[0].velocity, startTime, endTime );
+          playSingleNote( notes[0].key, notes[0].velocity, startTime + 0.1, endTime + 0.1); // Offset by 0.1s to prevent missed notes? TODO investigate!
           notes.splice(0,1);  // Remove from queue
           if( notes.length < 1)
             break;
@@ -127,17 +128,35 @@ var Transport = (function(){
     {
       startTime = startTime || ctx.currentTime;
 
-      var attack  = 0.001;
-      var release = 0.001;
+      var attackVolume  = 0.001;
+      var releaseVolume = 0.001;
+
+      var attackFilter  = 0.001;
+      var decayFilter   = 0.050;
+      var releaseFilter = 0.1;
+      var filterPeak    = 10000;
+
+
       var amplitudeEnvelope = amplitudeEnvelopes[key];
+      var filterEnvelope = filterEnvelopes[key];
       var currentOscillator = oscillators[key];
+
+      // Create Filter Envelope if necessary
+      if( ! filterEnvelope )
+      {
+        filterEnvelopes[key] = ctx.createBiquadFilter();
+        filterEnvelope = filterEnvelopes[key];
+        filterEnvelope.connect(analyser1);
+        filterEnvelope.frequency.value = 0.0;
+        filterEnvelope.type = "lowpass";
+      }
 
       // Create Amplitude Envelope if necessary
       if( ! amplitudeEnvelope )
       {
         amplitudeEnvelopes[key] = ctx.createGain();
         amplitudeEnvelope = amplitudeEnvelopes[key];
-        amplitudeEnvelope.connect(analyser1);
+        amplitudeEnvelope.connect(filterEnvelope);
         amplitudeEnvelope.gain.value = 0.0;
       }
 
@@ -158,14 +177,21 @@ var Transport = (function(){
       if( velocity > 0 )
       {
         // Attack
+        filterEnvelope.frequency.cancelScheduledValues( startTime );
+        filterEnvelope.frequency.setValueAtTime( 0.0, startTime );
+        filterEnvelope.frequency.setTargetAtTime( filterPeak, startTime, attackFilter );
         amplitudeEnvelope.gain.cancelScheduledValues( startTime );
         amplitudeEnvelope.gain.setValueAtTime( 0.0, startTime );
-        amplitudeEnvelope.gain.setTargetAtTime( velocity/127, startTime, attack );
+        amplitudeEnvelope.gain.setTargetAtTime( velocity/127, startTime, attackVolume );
+
+        // Decay
+        filterEnvelope.frequency.setTargetAtTime( 0, startTime + 0.1, decayFilter );
+
 
         // Release
         if( endTime )
         {
-          amplitudeEnvelope.gain.setTargetAtTime( 0.0, endTime, release );
+          amplitudeEnvelope.gain.setTargetAtTime( 0.0, endTime, releaseVolume );
         }
       }
       // Release the current envelope
@@ -173,7 +199,7 @@ var Transport = (function(){
       {
         // Release
         amplitudeEnvelope.gain.cancelScheduledValues(startTime);
-        amplitudeEnvelope.gain.setTargetAtTime( 0.0, startTime, release );
+        amplitudeEnvelope.gain.setTargetAtTime( 0.0, startTime, releaseVolume );
       }
     };
   var stop = function()

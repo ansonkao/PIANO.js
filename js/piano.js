@@ -222,7 +222,6 @@ var PIANO = (function(key){
                                     , start: Math.floor( timePosition * 4 ) * 0.25
                                     };
                 var newNote = new Note(newNoteParams);
-                console.log( e.clientX - $.model.canvas.clientXYDirectional('x'), keyPosition, newNote );
                 $.model.setActiveNotes( newNote );
               }
               break;
@@ -578,7 +577,7 @@ var PIANO = (function(key){
           this.notes[i].selected = false;
       }
 
-      $.model.getAverageVelocity();
+      //$.model.getAverageVelocity();
     };
 
   // ==========================================================================

@@ -1,7 +1,7 @@
 var Transport = (function(){
 
   var keyFrequency = [];
-  var oscillator = [];
+  var oscillators = [];
   var bpm = 105;
   var AudioContext = window.AudioContext || window.webkitAudioContext;
   var ctx = new AudioContext();
@@ -39,7 +39,7 @@ var Transport = (function(){
       oscillator.stop( getPlayTime( end ) );
     };
 
-  var play = function()
+  var playAll = function()
     {
       var notes = PIANO.getAllNotes();
 
@@ -48,7 +48,41 @@ var Transport = (function(){
         createOscillator( notes[i].key, notes[i].start, notes[i].end, notes[i].velocity );
       }
     };
+  var playSingleNote = function( key, velocity )
+    {
+      var currentOscillator = oscillators[key];
 
+      // Create oscillator if necessary
+      if( ! currentOscillator )
+      {
+        // Velocity = 0 means NOTE OFF - don't do anything
+        if( velocity <= 0 )
+          return;
+
+        oscillators[key] = ctx.createOscillator();
+        currentOscillator = oscillators[key];
+      }
+
+      // Modulate
+      if( velocity <= 0 )
+      {
+        currentOscillator.stop();
+        oscillators[key] = null;
+      }
+      else
+      {
+        // Amplitude Envelope
+        var amplitudeEnvelope = ctx.createGain();
+        amplitudeEnvelope.connect(masterVolume);
+        amplitudeEnvelope.gain.value = velocity / 127;
+
+        // Oscillator config
+        currentOscillator.connect( amplitudeEnvelope );
+        currentOscillator.type = 'square';
+        currentOscillator.frequency.value = keyFrequency[ key ];
+        currentOscillator.start();
+      }
+    };
   var stop = function()
     {
       // TODO
@@ -60,7 +94,8 @@ var Transport = (function(){
     };
 
   // Return the public methods
-  return { play: play
+  return { playAll: playAll
+         , playSingleNote: playSingleNote
          , stop: stop
          , setTempo: setTempo
          };

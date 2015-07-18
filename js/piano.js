@@ -67,6 +67,7 @@ var PIANO = (function(key){
       var dragAction  = null;
       var startEvent  = null;
       var currentNote = null;
+      var currentKey  = null;
       var gripHandler = function (e)
         {
           startEvent = e;
@@ -85,6 +86,10 @@ var PIANO = (function(key){
             case 'max': CurseWords.setExplicitCursor('yresize');  break;
             case 'select':
           }
+
+          // Play a preview sound
+          currentKey = Math.ceil( keyPosition );
+          Transport.playSingleNote( currentKey, 100 ); // REALLY BAD!!! TIGHTLY COUPLED, BREAK OUT VIA PUB SUB PATTERN
 
           // Re-render
           $.view.renderFreshGrid();
@@ -125,9 +130,29 @@ var PIANO = (function(key){
               showSelectionBox = true;
               $.model.selectNotesInBox( startEvent, e );
           }
-
           // Draw the notes accordingly
           noteChanges = $.model.snapNoteChanges( noteChanges, currentNote );
+
+          // Notes being dragged, update the preview sound
+          if( currentNote )
+          {
+            // Check if key has changed
+            if( currentNote.key + noteChanges.keyDelta != currentKey )
+            {
+              // Stop old preview sound, start updated one
+              Transport.playSingleNote( currentKey, 0 ); // REALLY BAD!!! TIGHTLY COUPLED, BREAK OUT VIA PUB SUB PATTERN
+              Transport.playSingleNote( currentNote.key + noteChanges.keyDelta, 100 ); // REALLY BAD!!! TIGHTLY COUPLED, BREAK OUT VIA PUB SUB PATTERN
+
+              // Track the new key
+              currentKey = currentNote.key + noteChanges.keyDelta;
+            }
+
+          }
+          // No notes being dragged, just cancel the sound
+          else
+          {
+            Transport.playSingleNote( currentKey, 0 ); // REALLY BAD!!! TIGHTLY COUPLED, BREAK OUT VIA PUB SUB PATTERN
+          }
 
           // Render it all!
           $.view.renderFreshGrid();
@@ -137,6 +162,9 @@ var PIANO = (function(key){
         };
       var dropHandler = function (e)
         {
+          // Stop the sound if a note was clicked
+          Transport.playSingleNote( currentKey, 0 ); // REALLY BAD!!! TIGHTLY COUPLED, BREAK OUT VIA PUB SUB PATTERN
+
           // Determine the final changes to the notes
           var noteChanges = {};
           switch( dragAction )
@@ -308,7 +336,7 @@ var PIANO = (function(key){
   $.model.height              = null;
   $.model.timeScale           = { min: 0.500, max: 1.000 };
   $.model.keyScale            = { min: 0.000, max: 1.000 };
-  $.model.notes               = null;
+  $.model.notes               = [];
   $.model.isDragging          = false;
   $.model.isHovering          = false;
   $.model.maxVelocity         = 127;
@@ -328,7 +356,7 @@ var PIANO = (function(key){
       $.model.canvasContext.scale( $.model.pixelScale, $.model.pixelScale );
 
       // Notes
-      $.model.notes = params.notes;
+      $.model.notes = params.notes || [];
 
       // Controllers
       for( var i in $.controller )

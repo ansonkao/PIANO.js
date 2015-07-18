@@ -304,6 +304,7 @@ var PIANO = (function(key){
         $.view.renderNotes();
       });
     };
+  /*
   $.controller.velocityChange = function()
     {
       var velocityInput = document.getElementById('note_velocity');
@@ -323,6 +324,7 @@ var PIANO = (function(key){
         $.view.renderNotes();
       });
     };
+  */
 
   // ==========================================================================
   // MODEL
@@ -431,7 +433,7 @@ var PIANO = (function(key){
         notes[i].active = union && !( notes[i].active ) || union === false;
       }
 
-      $.model.getAverageVelocity();
+      //$.model.getAverageVelocity();
     };
   $.model.adjustActiveNotes   = function(params)
     {

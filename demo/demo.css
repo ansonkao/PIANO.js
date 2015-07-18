@@ -1,50 +1,65 @@
+html,
 body {
-  margin: 0 0 60px;
+  overflow: hidden;
+}
+body {
+  margin: 0 0 15px;
   padding: 0;
   color: #669;
   background-color: #234;
 }
 header {
-  padding: 40px 0 40px;
+  padding: 15px;
   color: #FFF;
+}
+#github {
+  position: absolute;
+  top: -10px;
+  right: -10px;
+  border: 0;
+  width: 120px;
 }
 h1 {
+  display: inline-block;
   font-family: oswald, helvetica, arial, sans-serif;
-  font-size: 36px;
+  font-size: 40px;
   color: #FFF;
-  margin: 0 0 10px;
+  margin: 0 0 5px;
 }
 h2 {
+  padding-left: 20px;
+  display: inline-block;
   font-size: 18px;
   margin: 0;
 }
-h3 {
-  font-size: 24px;
-  letter-spacing: -1px;
-  color: #448;
-  padding-bottom: 5px;
-  border-bottom: 1px solid #66A;
-  margin: 30px 0 10px;
+#transport {
+  position: absolute;
+  top: 25px;
+  right: 250px;
 }
-p {
-  margin: 0 0 5px;
-  line-height: 20px;
+.btn {
+  border-color: #FFF;
 }
-.text-center {
-  text-align: center;
+.form-control {
+  border-color: #FFF;
 }
 .page {
   margin: auto;
-  padding: 0 30px;
+  padding: 0 15px;
 }
 .keyboard {
+  position: absolute;
+  left: 15px;
+  right: 250px;
+  bottom: 15px;
   z-index: 10;
 }
 #target {
-  margin: auto;
-  width: 100%;
-  height: 600px;
-  position: relative;
+  position: absolute;
+  top: 75px;
+  left: 15px;
+  right: 250px;
+  bottom: 115px;
   overflow: hidden;
 }
 #background {
@@ -53,8 +68,4 @@ p {
   right: 0%;
   width: 100%;
   height: 100%;
-}
-footer {
-  margin-top: 20px;
-  text-align: center;
 }

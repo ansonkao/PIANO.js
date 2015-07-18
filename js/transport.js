@@ -12,7 +12,7 @@ var Transport = (function(){
   masterVolume.gain.value = 0.25;
 
 
-  key('space', function(){ play(); return false; });
+  key('space', function(){ playAll(); return false; });
 
 
   // Set the frequencies for the notes

@@ -642,7 +642,7 @@ var PIANO = (function(key){
         $.model.canvasContext.stroke();
       }
     };
-  $.view.renderNotes      = function(params)
+  $.view.renderNotes      = function(params, livePreview)
     {
       for( var i = 0; i < $.model.notes.length; i++ )
       {
@@ -703,9 +703,22 @@ var PIANO = (function(key){
       $.model.canvasContext.stroke();
       $.model.canvasContext.setLineDash([]);
     };
+  $.view.renderLiveNote   = function(note)
+    {
+      $.model.canvasContext.beginPath();
+      $.model.canvasContext.strokeStyle = "#000";
+      $.model.canvasContext.fillStyle   = "#F0F";
+      $.view.renderSingleNote( note );
+      $.model.canvasContext.stroke();
+    };
 
-  return { initialize:    $.model.initialize
-         , getAllNotes:   function(){ return $.model.notes; }
+  return { initialize:      $.model.initialize
+         , getAllNotes:     function(){ return $.model.notes; }
+         , refreshView:     function(){
+                              $.view.renderFreshGrid();
+                              $.view.renderNotes();
+                            }
+         , renderLiveNote:  $.view.renderLiveNote
          };
 
 })(key);

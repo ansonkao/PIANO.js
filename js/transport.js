@@ -85,15 +85,20 @@ var Transport = (function(){
       var playStart = ctx.currentTime;
       var barsPerLoop = 4;
       var notes = jQuery.extend( true, [], PIANO.getAllNotes() );
+      notes.sort(function(noteA, noteB){
+        return noteA.start - noteB.start;
+      });
       var loop = 0;
 
       var newScheduleLooper = setInterval(function(){
 
         // Schedule up to the next 100 ms worth of notes
+        PIANO.refreshView();
         var startTime = getPlayTime( notes[0].start + loop*barsPerLoop, playStart );
         var   endTime = getPlayTime( notes[0].end   + loop*barsPerLoop, playStart );
-        while( startTime < ctx.currentTime + 0.100 )
+        while( startTime < ctx.currentTime + 0.40 )
         {
+          PIANO.renderLiveNote( notes[0] ); // REALLY BAD!!! TIGHTLY COUPLED, BREAK OUT VIA PUB SUB PATTERN
           playSingleNote( notes[0].key, notes[0].velocity, startTime, endTime );
           notes.splice(0,1);  // Remove from queue
           if( notes.length < 1)
@@ -107,9 +112,12 @@ var Transport = (function(){
         {
           loop++;
           notes = jQuery.extend( true, [], PIANO.getAllNotes() );
+          notes.sort(function(noteA, noteB){
+            return noteA.start - noteB.start;
+          });
         }
 
-      }, 50);
+      }, 25);
 
       scheduleLoopers.push(newScheduleLooper);
     };
@@ -119,6 +127,8 @@ var Transport = (function(){
     {
       startTime = startTime || ctx.currentTime;
 
+      var attack  = 0.001;
+      var release = 0.001;
       var amplitudeEnvelope = amplitudeEnvelopes[key];
       var currentOscillator = oscillators[key];
 
@@ -150,12 +160,12 @@ var Transport = (function(){
         // Attack
         amplitudeEnvelope.gain.cancelScheduledValues( startTime );
         amplitudeEnvelope.gain.setValueAtTime( 0.0, startTime );
-        amplitudeEnvelope.gain.setTargetAtTime( velocity/127, startTime, 0.25 );
+        amplitudeEnvelope.gain.setTargetAtTime( velocity/127, startTime, attack );
 
         // Release
         if( endTime )
         {
-          amplitudeEnvelope.gain.setTargetAtTime( 0.0, endTime, 0.25 );
+          amplitudeEnvelope.gain.setTargetAtTime( 0.0, endTime, release );
         }
       }
       // Release the current envelope
@@ -163,7 +173,7 @@ var Transport = (function(){
       {
         // Release
         amplitudeEnvelope.gain.cancelScheduledValues(startTime);
-        amplitudeEnvelope.gain.setTargetAtTime( 0.0, startTime, 0.25 );
+        amplitudeEnvelope.gain.setTargetAtTime( 0.0, startTime, release );
       }
     };
   var stop = function()

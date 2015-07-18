@@ -137,7 +137,7 @@ var PIANO = (function(key){
           if( currentNote )
           {
             // Check if key has changed
-            if( currentNote.key + noteChanges.keyDelta != currentKey )
+            if( noteChanges.keyDelta && ( currentNote.key + noteChanges.keyDelta != currentKey ) )
             {
               // Stop old preview sound, start updated one
               Transport.playSingleNote( currentKey, 0 ); // REALLY BAD!!! TIGHTLY COUPLED, BREAK OUT VIA PUB SUB PATTERN
@@ -146,7 +146,6 @@ var PIANO = (function(key){
               // Track the new key
               currentKey = currentNote.key + noteChanges.keyDelta;
             }
-
           }
           // No notes being dragged, just cancel the sound
           else

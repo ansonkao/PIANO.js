@@ -2,16 +2,16 @@ var Transport = (function(){
 
   var keyFrequency = [];
   var oscillators = [];
+  var amplitudeEnvelopes = [];
   var bpm = 105;
   var AudioContext = window.AudioContext || window.webkitAudioContext;
   var ctx = new AudioContext();
   var masterVolume = ctx.createGain();
   var analyser1 = ctx.createAnalyser();
-  var analyser2 = ctx.createAnalyser();
 
   // Initialize everything;
+  analyser1.connect( masterVolume );
   masterVolume.connect( ctx.destination );
-  //masterVolume.connect( analyser2 );
   masterVolume.gain.value = 0.25;
 
 
@@ -19,14 +19,10 @@ var Transport = (function(){
   // Analyser (MOVE THIS LATER!)
   // ==========================================================================
   analyser1.fftSize = 2048;
-  analyser2.fftSize = 2048;
-  var bufferLength1 = analyser2.fftSize;
-  var bufferLength2 = analyser2.fftSize;
+  var bufferLength1 = analyser1.fftSize;
   var dataArray1 = new Uint8Array(bufferLength1);
-  var dataArray2 = new Uint8Array(bufferLength2);
 
   analyserCanvas1 = document.getElementById('analyser1').getContext("2d");
-  analyserCanvas2 = document.getElementById('analyser2').getContext("2d");
 
   function drawAnalyser1()
   {
@@ -57,37 +53,7 @@ var Transport = (function(){
     analyserCanvas1.lineTo(200, 100/2);
     analyserCanvas1.stroke();
   }
-  function drawAnalyser2()
-  {
-    drawVisual = requestAnimationFrame(drawAnalyser2);
-    analyser2.getByteTimeDomainData(dataArray2);
-
-    analyserCanvas2.clear();
-    analyserCanvas2.fillStyle = 'transparent';
-    analyserCanvas2.fillRect(0, 0, 200, 100);
-    analyserCanvas2.lineWidth = 2;
-    analyserCanvas2.strokeStyle = 'rgb(0, 255, 0)';
-    analyserCanvas2.beginPath();
-
-    var sliceWidth = 200 * 1.0 / bufferLength2;
-    var x = 0;
-
-    for(var i = 0; i < bufferLength2; i++)
-    {
-      var v = dataArray2[i] / 128.0;
-      var y = v * 100/2;
-      if(i === 0)
-        analyserCanvas2.moveTo(x, y);
-      else
-        analyserCanvas2.lineTo(x, y);
-      x += sliceWidth;
-    }
-
-    analyserCanvas2.lineTo(200, 100/2);
-    analyserCanvas2.stroke();
-  }
   drawAnalyser1();
-  drawAnalyser2();
   // ==========================================================================
   // END Analyser
   // ==========================================================================
@@ -101,74 +67,89 @@ var Transport = (function(){
     keyFrequency[i] = Math.pow(2, (i-49)/12) * 440;
   }
 
-  var getPlayTime = function( time )
+  var getPlayTime = function( time, playStart )
     {
-      return time * 120 / bpm + ctx.currentTime;
-    };
+      // Playstart is the moment when the "PLAY" button was pressed. If not provided, default to now.
+      playStart = playStart || ctx.currentTime;
 
-  var createOscillator = function( key, start, end, velocity )
-    {
-      var oscillator = ctx.createOscillator();
-      var gainNode = ctx.createGain();
-      gainNode.connect(masterVolume);
-      gainNode.gain.value = velocity / 127;
-      oscillator.connect( gainNode );
-      oscillator.type = 'square';
-      oscillator.frequency.value = keyFrequency[ key ];
-      oscillator.start( getPlayTime( start ) );
-      oscillator.stop( getPlayTime( end ) );
+      return time * 120 / bpm + playStart;
     };
 
   var playAll = function()
     {
+      var playStart = ctx.currentTime;
       var notes = PIANO.getAllNotes();
 
-      for( var i in notes )
+      for( var loop = 0; loop < 100; loop++ )
       {
-        createOscillator( notes[i].key, notes[i].start, notes[i].end, notes[i].velocity );
+        for( var i in notes )
+        {
+          var startTime = getPlayTime( notes[i].start + loop*4, playStart );
+          var   endTime = getPlayTime( notes[i].end   + loop*4, playStart );
+          playSingleNote( notes[i].key, notes[i].velocity, startTime, endTime );
+        }
       }
     };
-  var playSingleNote = function( key, velocity )
+  var playSingleNote = function( key, velocity, startTime, endTime )
     {
+      startTime = startTime || ctx.currentTime;
+
+      var amplitudeEnvelope = amplitudeEnvelopes[key];
       var currentOscillator = oscillators[key];
+
+      // Create Amplitude Envelope if necessary
+      if( ! amplitudeEnvelope )
+      {
+        amplitudeEnvelopes[key] = ctx.createGain();
+        amplitudeEnvelope = amplitudeEnvelopes[key];
+        amplitudeEnvelope.connect(analyser1);
+        amplitudeEnvelope.gain.value = 0.0;
+      }
 
       // Create oscillator if necessary
       if( ! currentOscillator )
       {
-        // Velocity = 0 means NOTE OFF - don't do anything
-        if( velocity <= 0 )
-          return;
-
         oscillators[key] = ctx.createOscillator();
         currentOscillator = oscillators[key];
+        currentOscillator.connect( amplitudeEnvelope );
+        currentOscillator.start(ctx.currentTime);
       }
 
-      // Modulate
-      if( velocity <= 0 )
+      // Set the synth
+      currentOscillator.type = 'sawtooth';
+      currentOscillator.frequency.value = keyFrequency[ key ];
+
+      // Start a new envelope
+      if( velocity > 0 )
       {
-        currentOscillator.stop(ctx.currentTime);
-        oscillators[key] = null;
+        // Attack
+        amplitudeEnvelope.gain.cancelScheduledValues( startTime );
+        amplitudeEnvelope.gain.setValueAtTime( 0.0, startTime );
+        amplitudeEnvelope.gain.setTargetAtTime( velocity/127, startTime, 0.25 );
+
+        // Release
+        if( endTime )
+        {
+          amplitudeEnvelope.gain.setTargetAtTime( 0.0, endTime, 0.25 );
+        }
       }
+      // Release the current envelope
       else
       {
-        // Amplitude Envelope
-        var amplitudeEnvelope = ctx.createGain();
-        amplitudeEnvelope.connect(masterVolume);
-        amplitudeEnvelope.gain.setValueAtTime( 0.0001, ctx.currentTime );
-        amplitudeEnvelope.gain.linearRampToValueAtTime( velocity/127, ctx.currentTime + 0.2 );
-        amplitudeEnvelope.connect( analyser2 );
-
-        // Oscillator config
-        currentOscillator.connect( analyser1 );
-        currentOscillator.connect( amplitudeEnvelope );
-        currentOscillator.type = 'square';
-        currentOscillator.frequency.value = keyFrequency[ key ];
-        currentOscillator.start(ctx.currentTime);
+        // Release
+        amplitudeEnvelope.gain.cancelScheduledValues(startTime);
+        amplitudeEnvelope.gain.setTargetAtTime( 0.0, startTime, 0.25 );
       }
     };
   var stop = function()
     {
-      // TODO
+      amplitudeEnvelopes.forEach(function(amplitudeEnvelope){
+        if( amplitudeEnvelope )
+        {
+          amplitudeEnvelope.gain.cancelScheduledValues(ctx.currentTime);
+          amplitudeEnvelope.gain.setValueAtTime( 0.0, ctx.currentTime );
+        }
+      });
     };
 
   var setTempo = function(tempo)

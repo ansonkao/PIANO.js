@@ -22,7 +22,7 @@
   <header>
 
     <h1 class="text-left">PIANO.js</h1>
-    <h2 class="text-left">A browser-based MIDI sequencer.</h2>
+    <h2 class="text-left">A browser-based sequencer + synthesizer thingy</h2>
     <a href="https://github.com/ansonkao/PIANO.js">
       <img id="github"
            src="https://camo.githubusercontent.com/a6677b08c955af8400f44c6298f40e7d19cc5b2d/68747470733a2f2f73332e616d617a6f6e6177732e636f6d2f6769746875622f726962626f6e732f666f726b6d655f72696768745f677261795f3664366436642e706e67"
@@ -148,7 +148,6 @@
 
   <div id="dashboard">
     <canvas id="analyser1" class="analyser" width="200" height="100"></canvas>
-    <canvas id="analyser2" class="analyser" width="200" height="100"></canvas>
   </div>
 
   <script lang="text/javascript" src="../dist/PIANO.js"></script>
@@ -233,7 +232,7 @@
         pianoParams.clipLength = 4;
 
     var scrollParams = { x: {min: 0.000, max: 0.000 }
-                       , y: {min: 0.000, max: 0.250 }
+                       , y: {min: 0.000, max: 0.000 }
                        , smallestZoomX: 0.5
                        , smallestZoomY: 0.0306125
                        };
@@ -283,7 +282,7 @@
     // Hookup Transport UI to Transport Controller
     document.getElementById("play" ).addEventListener('click' , function(e){ Transport.playAll(); e.preventDefault(); });
     document.getElementById("stop" ).addEventListener('click' , function(e){ Transport.stop(); e.preventDefault(); });
-    //document.getElementById("tempo").addEventListener('change', function(e){ Transport.setTempo( this.value ); e.preventDefault(); });
+    document.getElementById("tempo").addEventListener('change', function(e){ Transport.setTempo( this.value ); e.preventDefault(); });
 
   </script>
 

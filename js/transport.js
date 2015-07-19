@@ -4,9 +4,13 @@ var Transport = (function(){
   var oscillators = [];
   var amplitudeEnvelopes = [];
   var filterEnvelopes = [];
-  var bpm = 105;
+  var bpm = 256;
   var AudioContext = window.AudioContext || window.webkitAudioContext;
   var ctx = new AudioContext();
+  var masterBus = ctx.createGain();
+  var reverb = ctx.createConvolver();
+  var reverbDry = ctx.createGain();
+  var reverbWet = ctx.createGain();
   var masterVolume = ctx.createGain();
   var analyser1 = ctx.createAnalyser();
   var playing = false;
@@ -14,10 +18,30 @@ var Transport = (function(){
 
 
   // Initialize everything;
+  masterBus.connect( reverb );
+  masterBus.connect( reverbDry );
+  reverb.connect( reverbWet );
+  reverbWet.connect( analyser1 );
+  reverbWet.gain.value = 0;
+  reverbDry.connect( analyser1 );
+  reverbDry.gain.value = 1;
   analyser1.connect( masterVolume );
   masterVolume.connect( ctx.destination );
   masterVolume.gain.value = 0.25;
 
+  // Reverb Convolution Impulse Response
+  ajaxRequest = new XMLHttpRequest();
+  ajaxRequest.open('GET', '/demo/impulse.wav', true);
+  ajaxRequest.responseType = 'arraybuffer';
+  ajaxRequest.onload = function() {
+    var audioData = ajaxRequest.response;
+    ctx.decodeAudioData(audioData, function(buffer){
+      reverb.buffer = buffer;
+    }, function(e){
+      console.error( e );
+    });
+  };
+  ajaxRequest.send();
 
   // ==========================================================================
   // Analyser (MOVE THIS LATER!)
@@ -129,12 +153,12 @@ var Transport = (function(){
       startTime = startTime || ctx.currentTime;
 
       var attackVolume  = 0.001;
-      var releaseVolume = 0.001;
+      var releaseVolume = 1.001;
 
-      var attackFilter  = 0.001;
-      var decayFilter   = 0.050;
+      var attackFilter  = 0;//1.0 * globalEffect1;
+      var decayFilter   = 0.05 + 0.05 * globalEffect1;
       var releaseFilter = 0.1;
-      var filterPeak    = 10000;
+      var filterPeak    = 20000 * globalEffect1;
 
 
       var amplitudeEnvelope = amplitudeEnvelopes[key];
@@ -146,7 +170,7 @@ var Transport = (function(){
       {
         filterEnvelopes[key] = ctx.createBiquadFilter();
         filterEnvelope = filterEnvelopes[key];
-        filterEnvelope.connect(analyser1);
+        filterEnvelope.connect(masterBus);
         filterEnvelope.frequency.value = 0.0;
         filterEnvelope.type = "lowpass";
       }
@@ -185,8 +209,7 @@ var Transport = (function(){
         amplitudeEnvelope.gain.setTargetAtTime( velocity/127, startTime, attackVolume );
 
         // Decay
-        filterEnvelope.frequency.setTargetAtTime( 0, startTime + 0.1, decayFilter );
-
+        filterEnvelope.frequency.setTargetAtTime( 0, startTime + attackFilter + 0.01, decayFilter );
 
         // Release
         if( endTime )
@@ -228,6 +251,13 @@ var Transport = (function(){
          , playSingleNote: playSingleNote
          , stop: stop
          , setTempo: setTempo
+         , setReverbWetMix: function(wet) {
+              var wetValue = wet;
+                  wetValue = wetValue > 1 ? 1 : wetValue;
+                  wetValue = wetValue < 0 ? 0 : wetValue;
+              reverbDry.gain.value = 1 - wetValue;
+              reverbWet.gain.value = wetValue;
+           }
          };
 
 })();

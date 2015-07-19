@@ -11,6 +11,7 @@
   <link rel="stylesheet" href="http://yandex.st/highlightjs/7.5/styles/github.min.css?ver=3.6.1">
   <link href='http://fonts.googleapis.com/css?family=Oswald:300,400,400italic,700' rel='stylesheet' type='text/css'>
   <script lang="text/javascript" src="../bower_components/jquery/dist/jquery.js"></script>
+  <script lang="text/javascript" src="../bower_components/aterrien/jQuery-Knob/dist/jquery.knob.min.js"></script>
   <script type="text/javascript" src="http://yandex.st/highlightjs/7.5/highlight.min.js"></script>
   <script type="text/javascript">
     hljs.initHighlightingOnLoad();
@@ -34,7 +35,7 @@
     <form id="transport" class="form-inline">
       <button id="play" class="btn btn-default" type="button" style="color: #080;"><span class="glyphicon glyphicon-play"></span> Play</button>
       <button id="stop" class="btn btn-default" type="button" style="color: #000;"><span class="glyphicon glyphicon-stop"></span> Stop</button>
-      <input id="tempo" class="form-control " type="number" step="1" value="128" style="width: 100px;" />
+      <input id="tempo" class="form-control " type="number" step="1" value="256" style="width: 100px;" />
       <!--
       <input id="note_velocity" class="form-control input-lg" type="number" step="1" value="50" />
       -->
@@ -148,6 +149,14 @@
 
   <div id="dashboard">
     <canvas id="analyser1" class="analyser" width="200" height="100"></canvas>
+    <div style="text-align: center;">
+      <input type="text" id="superknob1" value="10" />
+    </div>
+    <h3>Phat ass sound effect</h3>
+    <div style="text-align: center;">
+      <input type="text" id="superknob2" value="10" />
+    </div>
+    <h3>Redonk sound effect</h3>
   </div>
 
   <script lang="text/javascript" src="../dist/PIANO.js"></script>
@@ -273,6 +282,38 @@
     var keyboard = document.getElementById('keyboard');
     var keybed   = document.getElementById('keybed');
 
+    globalEffect1 = 0.01;
+    // PHAT ASS SOUND EFFECT
+    $("#superknob1").knob({
+      'min': 1,
+      'max': 1000,
+      'width': 100,
+      'height': 100,
+      'fgColor': '#0F0',
+      'lineCap': 'round',
+      'angleOffset': -125,
+      'angleArc': 250,
+      'change': function(newValue) {
+        globalEffect1 = newValue * 0.001;  // TODO THIS GLOBAL IS THE WORST!!! REFACTORR!!!
+      }
+    });
+
+    globalEffect2 = 0.01;
+    // REDONK SOUND EFFECT
+    $("#superknob2").knob({
+      'min': 1,
+      'max': 1000,
+      'width': 100,
+      'height': 100,
+      'fgColor': '#0F0',
+      'lineCap': 'round',
+      'angleOffset': -125,
+      'angleArc': 250,
+      'change': function(newValue) {
+        Transport.setReverbWetMix( newValue * 0.001 );
+      }
+    });
+
          PIANO.initialize( target, pianoParams  );
     GripScroll.add( target, scrollParams );
 
@@ -308,8 +349,6 @@
       // Stop the key
       Transport.playSingleNote( key, 0 );
     });
-
-
 
     // Hookup Transport UI to Transport Controller
     document.getElementById("play" ).addEventListener('click' , function(e){ Transport.playAll(); e.preventDefault(); });

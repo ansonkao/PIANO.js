@@ -25,6 +25,7 @@
   "devDependencies": {
     "keymaster": "1.6.3",
     "gripscroll": "0.3.5",
-    "jquery": "~2.1.4"
+    "jquery": "~2.1.4",
+    "aterrien/jQuery-Knob": "~1.2.11"
   }
 }

@@ -40,10 +40,6 @@ var PIANO = (function(key){
           var  hoveredNote = $.model.getHoveredNote(timePosition, keyPosition);
           var  hoverAction = $.model.getHoverAction(timePosition, hoveredNote);
 
-          // Repaint with the hover state
-          $.view.renderFreshGrid();
-          $.view.renderNotes();
-
           // Set the cursor
           var newCursor = null;
           switch( hoverAction )
@@ -57,8 +53,8 @@ var PIANO = (function(key){
         };
       var exitHandler  = function (e)
         {
-          $.view.renderFreshGrid();
-          $.view.renderNotes();
+          // This line below is useless at the moment... TODO
+          $.model.isHovering = false;
         };
       CurseWords.addImplicitCursorHandler( $.model.canvas, enterHandler, hoverHandler, exitHandler );
     };

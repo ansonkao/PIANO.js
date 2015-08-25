@@ -31,7 +31,7 @@ var PIANO = (function(key){
         };
       var hoverHandler = function (e)
         {
-          if( $.model.isDragging )
+          if( $.model.drag.status )
             return null;
 
           // Figure out which note is hovered over (if any)?
@@ -60,22 +60,21 @@ var PIANO = (function(key){
     };
   $.controller.mouseDrag      = function()
     {
-      var dragAction  = null;
-      var startEvent  = null;
       var currentNote = null;
       var currentKey  = null;
       var gripHandler = function (e)
         {
-          startEvent = e;
+          $.model.drag.startX = e.clientX - $.model.canvas.clientXYDirectional('x');
+          $.model.drag.startY = e.clientY - $.model.canvas.clientXYDirectional('y');
 
           // Figure out which note (if any) is being gripped?
-          var timePosition   = $.model.yCoordToBar( e.clientY - $.model.canvas.clientXYDirectional('y') );
-          var  keyPosition   = $.model.xCoordToKey( e.clientX - $.model.canvas.clientXYDirectional('x') );
-          currentNote        = $.model.getHoveredNote(timePosition, keyPosition);
-          dragAction         = $.model.getHoverAction(timePosition, currentNote);
+          var timePosition    = $.model.yCoordToBar( $.model.drag.startY );
+          var  keyPosition    = $.model.xCoordToKey( $.model.drag.startX );
+          currentNote         = $.model.getHoveredNote(timePosition, keyPosition);
+          $.model.drag.action = $.model.getHoverAction(timePosition, currentNote);
 
           // Set the cursor if necessary
-          switch( dragAction )
+          switch( $.model.drag.action )
           {
             case 'mid': CurseWords.setExplicitCursor('default'); break;
             case 'min':
@@ -86,61 +85,62 @@ var PIANO = (function(key){
           // Play a preview sound
           currentKey = Math.ceil( keyPosition );
           Transport.playSingleNote( currentKey, 100 ); // REALLY BAD!!! TIGHTLY COUPLED, BREAK OUT VIA PUB SUB PATTERN
-
-          // Re-render
-          $.view.renderFreshGrid();
-          $.view.renderNotes();
         };
       var dragHandler = function (e)
         {
+          $.model.drag.endX = e.clientX - $.model.canvas.clientXYDirectional('x');
+          $.model.drag.endY = e.clientY - $.model.canvas.clientXYDirectional('y');
+
           // Set dragging state only if the cursor actually moves, otherwise it is a click!
-          if( Math.abs( e.clientX - startEvent.clientX ) > 1 || Math.abs( e.clientY - startEvent.clientY ) > 1 )
-            $.model.isDragging = true;  // Share this state to the rest of the app - e.g. hover handler
+          if( Math.abs( $.model.drag.endX - $.model.drag.startX ) > 1 || Math.abs( $.model.drag.endY - $.model.drag.startY ) > 1 )
+            $.model.drag.status = true;  // Share this state to the rest of the app - e.g. hover handler
 
           // If we begun dragging an inactive note, let's activate it!
-          if( currentNote && $.model.isDragging && !currentNote.active )
+          if( currentNote && $.model.drag.status && !currentNote.active )
           {
             if( ! key.shift )
               $.model.clearActiveNotes();
             currentNote.active = true;
           }
 
-          // Decide how to draw notes based on what action is currently occurring
-          var noteChanges = {};
-          var showSelectionBox = false;
-          switch( dragAction )
+          // Decide how active notes will change based on what action is currently occurring
+          switch( $.model.drag.action )
           {
             case 'mid':
               CurseWords.setExplicitCursor('grab');
-              noteChanges.keyDelta   = $.model.pixelsToKey( e.clientX - startEvent.clientX );
-              noteChanges.startDelta = $.model.pixelsToBar( e.clientY - startEvent.clientY );
-              noteChanges.endDelta   = noteChanges.startDelta;
+              $.model.drag.keyDelta   = $.model.pixelsToKey( $.model.drag.endX - $.model.drag.startX );
+              $.model.drag.startDelta = $.model.pixelsToBar( $.model.drag.endY - $.model.drag.startY );
+              $.model.drag.endDelta   = $.model.drag.startDelta;
               break;
             case 'min':
-              noteChanges.startDelta = $.model.pixelsToBar( e.clientY - startEvent.clientY );
+              $.model.drag.keyDelta   = 0;
+              $.model.drag.startDelta = $.model.pixelsToBar( $.model.drag.endY - $.model.drag.startY );
+              $.model.drag.endDelta   = 0;
               break;
             case 'max':
-              noteChanges.endDelta   = $.model.pixelsToBar( e.clientY - startEvent.clientY );
+              $.model.drag.keyDelta   = 0;
+              $.model.drag.startDelta = 0;
+              $.model.drag.endDelta   = $.model.pixelsToBar( $.model.drag.endY - $.model.drag.startY );
               break;
             case 'select':
-              showSelectionBox = true;
-              $.model.selectNotesInBox( startEvent, e );
+              $.model.selectNotesInBox( $.model.drag.startX, $.model.drag.startY, $.model.drag.endX, $.model.drag.endY );
           }
-          // Draw the notes accordingly
-          noteChanges = $.model.snapNoteChanges( noteChanges, currentNote );
+
+          // Snap to grid
+          $.model.snapNoteChanges( currentNote );
 
           // Notes being dragged, update the preview sound
           if( currentNote )
           {
             // Check if key has changed
-            if( noteChanges.keyDelta && ( currentNote.key + noteChanges.keyDelta != currentKey ) )
+            if( $.model.drag.keyDelta && ( currentNote.key + $.model.drag.keyDelta != currentKey ) )
             {
               // Stop old preview sound, start updated one
               Transport.playSingleNote( currentKey, 0 ); // REALLY BAD!!! TIGHTLY COUPLED, BREAK OUT VIA PUB SUB PATTERN
-              Transport.playSingleNote( currentNote.key + noteChanges.keyDelta, 100 ); // REALLY BAD!!! TIGHTLY COUPLED, BREAK OUT VIA PUB SUB PATTERN
+              Transport.playSingleNote( currentNote.key + $.model.drag.keyDelta, 100 ); // REALLY BAD!!! TIGHTLY COUPLED, BREAK OUT VIA PUB SUB PATTERN
 
               // Track the new key
-              currentKey = currentNote.key + noteChanges.keyDelta;
+              currentKey = currentNote.key + $.model.drag.keyDelta;
             }
           }
           // No notes being dragged, just cancel the sound
@@ -148,87 +148,81 @@ var PIANO = (function(key){
           {
             Transport.playSingleNote( currentKey, 0 ); // REALLY BAD!!! TIGHTLY COUPLED, BREAK OUT VIA PUB SUB PATTERN
           }
-
-          // Render it all!
-          $.view.renderFreshGrid();
-          $.view.renderNotes(noteChanges);
-          if( showSelectionBox )
-            $.view.renderSelectBox(startEvent, e);
         };
       var dropHandler = function (e)
         {
           // Stop the sound if a note was clicked
           Transport.playSingleNote( currentKey, 0 ); // REALLY BAD!!! TIGHTLY COUPLED, BREAK OUT VIA PUB SUB PATTERN
 
-          // Determine the final changes to the notes
-          var noteChanges = {};
-          switch( dragAction )
+          // Handle Selections/Deletions on note click
+          if( $.model.drag.action == 'mid' && ! $.model.drag.status )
           {
-            case 'mid':
-              // Adjusted existing note(s) by the mid-body
-              if( $.model.isDragging )
+            // Clicked on active note(s) - DELETE
+            if( currentNote.active )
+              $.model.deleteActiveNotes();
+
+            // Clicked on inactive note
+            else
+            {
+              // There is an existing selection - handle selection change
+              if( $.model.countActiveNotes() )
               {
-                noteChanges.keyDelta   = $.model.pixelsToKey( e.clientX - startEvent.clientX );
-                noteChanges.startDelta = $.model.pixelsToBar( e.clientY - startEvent.clientY );
-                noteChanges.endDelta   = noteChanges.startDelta;
-              }
-              // Delete all active notes - no drag so essentially clicked on the active notes
-              else if( currentNote.active )
-                $.model.deleteActiveNotes();
-              // Wasn't a drag a.k.a. basically clicked a note outside an existing note(s) selection
-              else if( !currentNote.active && $.model.countActiveNotes() > 0 )
-              {
-                // Add note to selection
+                // Add to selection (Union)
                 if( key.shift )
                   currentNote.active = true;
-                // Deselected existing note(s) selection
+                // Replace selection
                 else
                   $.model.clearActiveNotes();
               }
               // Delete the inactive note that was just clicked on
               else
-                $.model.notes.splice( $.model.notes.indexOf( currentNote ), 1 );
-              break;
-            case 'min':
-              // Adjusted the start grip of note(s)
-              noteChanges.startDelta = $.model.pixelsToBar( e.clientY - startEvent.clientY );
-              break;
-            case 'max':
-              // Adjusted the end grip of note(s)
-              noteChanges.endDelta   = $.model.pixelsToBar( e.clientY - startEvent.clientY );
-              break;
-            case 'select':
-              // Selected note(s) by selection box
-              if( $.model.isDragging )
               {
-                $.model.setActiveNotes( $.model.getSelectedNotes(), key.shift );
-                $.model.clearSelectedNotes();
+                currentNote.active = true;
+                $.model.deleteActiveNotes();
               }
-              // Deselected existing note(s) selection - wasn't a drag a.k.a. basically clicked a blank area
-              else if( $.model.countActiveNotes() > 0 )
-                $.model.clearActiveNotes();
-              // Create new note - wasn't a drag a.k.a. basically clicked a blank area when there was no existing selection
-              else
-              {
-                var timePosition = $.model.yCoordToBar( e.clientY - $.model.canvas.clientXYDirectional('y') );
-                var  keyPosition = $.model.xCoordToKey( e.clientX - $.model.canvas.clientXYDirectional('x') );
-                var newNoteParams = { key:   Math.ceil( keyPosition )
-                                    , end:   Math.ceil(  timePosition * 4 ) * 0.25
-                                    , start: Math.floor( timePosition * 4 ) * 0.25
-                                    };
-                var newNote = new Note(newNoteParams);
-                $.model.setActiveNotes( newNote );
-              }
-              break;
+            }
           }
 
-          // Update the state
-          $.model.isDragging = false;
-          dragAction = null;
-          noteChanges = $.model.snapNoteChanges( noteChanges, currentNote );
-          $.model.adjustActiveNotes(noteChanges);
-          $.view.renderFreshGrid();
-          $.view.renderNotes();
+          // Handle Selections/Deletions on blank click
+          if( $.model.drag.action == 'select' )
+          {
+            // Selected note(s) by selection box
+            if( $.model.drag.status )
+            {
+              $.model.setActiveNotes( $.model.getSelectedNotes(), key.shift );
+              $.model.clearSelectedNotes();
+            }
+
+            // Deselected existing note(s) selection - wasn't a drag a.k.a. basically clicked a blank area
+            else if( $.model.countActiveNotes() > 0 )
+              $.model.clearActiveNotes();
+
+            // Create new note - wasn't a drag a.k.a. basically clicked a blank area when there was no existing selection
+            else
+            {
+              var timePosition = $.model.yCoordToBar( $.model.drag.startY );
+              var  keyPosition = $.model.xCoordToKey( $.model.drag.startX );
+              var newNoteParams = { key:   Math.ceil( keyPosition )
+                                  , end:   Math.ceil(  timePosition * 4 ) * 0.25
+                                  , start: Math.floor( timePosition * 4 ) * 0.25
+                                  };
+              var newNote = new Note(newNoteParams);
+              $.model.setActiveNotes( newNote );
+            }
+          }
+
+          // Finalize the drag and clear state
+          $.model.applyDragDeltas();
+          $.model.drag.status = false;
+          $.model.drag.action = null;
+          $.model.drag.showSelectionBox = false;
+          $.model.drag.startX = undefined;
+          $.model.drag.startY = undefined;
+          $.model.drag.endX = undefined;
+          $.model.drag.endY = undefined;
+          $.model.drag.keyDelta   = 0;
+          $.model.drag.startDelta = 0;
+          $.model.drag.endDelta   = 0;
           CurseWords.clearExplicitCursor();
         };
       DragKing.addHandler( $.model.canvas, gripHandler, dragHandler, dropHandler );
@@ -253,36 +247,34 @@ var PIANO = (function(key){
       });
       key('del, backspace', function(){ 
         $.model.deleteActiveNotes();
-        $.view.renderFreshGrid();
-        $.view.renderNotes();
         return false;
       });
       key('right', function(){ 
-        var noteChanges = {keyDelta: 1};
-        $.model.adjustActiveNotes(noteChanges);
-        $.view.renderFreshGrid();
-        $.view.renderNotes();
+        $.model.drag.keyDelta = 1;
+        $.model.applyDragDeltas();
+        $.model.drag.keyDelta = 0;
         return false;
       });
       key('left', function(){ 
-        var noteChanges = {keyDelta: -1};
-        $.model.adjustActiveNotes(noteChanges);
-        $.view.renderFreshGrid();
-        $.view.renderNotes();
+        $.model.drag.keyDelta = -1;
+        $.model.applyDragDeltas();
+        $.model.drag.keyDelta = 0;
         return false;
       });
       key('up', function(){ 
-        var noteChanges = {startDelta: -0.25, endDelta: -0.25};
-        $.model.adjustActiveNotes(noteChanges);
-        $.view.renderFreshGrid();
-        $.view.renderNotes();
+        $.model.drag.startDelta = -0.25;
+        $.model.drag.endDelta = -0.25;
+        $.model.applyDragDeltas();
+        $.model.drag.startDelta = 0;
+        $.model.drag.endDelta = 0;
         return false;
       });
       key('down', function(){ 
-        var noteChanges = {startDelta: 0.25, endDelta: 0.25};
-        $.model.adjustActiveNotes(noteChanges);
-        $.view.renderFreshGrid();
-        $.view.renderNotes();
+        $.model.drag.startDelta = 0.25;
+        $.model.drag.endDelta = 0.25;
+        $.model.applyDragDeltas();
+        $.model.drag.startDelta = 0;
+        $.model.drag.endDelta = 0;
         return false;
       });
     };
@@ -333,7 +325,17 @@ var PIANO = (function(key){
   $.model.timeScale           = { min: 0.500, max: 1.000 };
   $.model.keyScale            = { min: 0.000, max: 1.000 };
   $.model.notes               = [];
-  $.model.isDragging          = false;
+  $.model.drag                = { status: false
+                                , action: null
+                                , showSelectionBox: false
+                                , startX: undefined
+                                , startY: undefined
+                                , endX:   undefined
+                                , endY:   undefined
+                                , keyDelta:   0
+                                , startDelta: 0
+                                , endDelta:   0
+                                };
   $.model.isHovering          = false;
   $.model.maxVelocity         = 127;
   $.model.minVelocity         = 0;
@@ -357,6 +359,9 @@ var PIANO = (function(key){
       // Controllers
       for( var i in $.controller )
         $.controller[i]();
+
+      // Views
+      $.view.renderLoop();
     };
   $.model.resize              = function()
     {
@@ -429,19 +434,16 @@ var PIANO = (function(key){
 
       //$.model.getAverageVelocity();
     };
-  $.model.adjustActiveNotes   = function(params)
+  $.model.applyDragDeltas     = function()
     {
-      // Saves changes indicated in the params argument to the currently active notes
-      if( ! params ) return;
-
       for( var i = 0; i < $.model.notes.length; i++ )
       {
         // Only apply to active notes
         if( $.model.notes[i].active )
         {
-          if( params.startDelta ) $.model.notes[i].start += params.startDelta;
-          if( params.keyDelta   ) $.model.notes[i].key   += params.keyDelta;
-          if( params.endDelta   ) $.model.notes[i].end   += params.endDelta;
+          if( $.model.drag.startDelta ) $.model.notes[i].start += $.model.drag.startDelta;
+          if( $.model.drag.keyDelta   ) $.model.notes[i].key   += $.model.drag.keyDelta;
+          if( $.model.drag.endDelta   ) $.model.notes[i].end   += $.model.drag.endDelta;
         }
       }
     };
@@ -510,31 +512,31 @@ var PIANO = (function(key){
       else if( $.model.barToPixels(     hoveredNote.end   - timePositionBars  ) <  5 ) return 'max';
       else                                                                             return 'mid';
     };
-  $.model.snapNoteChanges     = function(delta, targetNote)
+  $.model.snapNoteChanges     = function(targetNote)
     {
       // Takes a target note and a note delta and adjusts the delta to snap to the closest snap points
       // delta should be an object of the form:  { startDelta: X.XXX, endDelta: Y.YYY, keyDelta: Z.ZZZ }
       // TODO: Make standardized objects for Notes and note deltas.
       if( ! targetNote )
-        return delta;
+        return;
 
       // Key change is always integer
-      delta.keyDelta = Math.round( delta.keyDelta );
+      $.model.drag.keyDelta = Math.round( $.model.drag.keyDelta );
 
       // User can press alt to bypass quantization aka "snap"!
-      if( key.alt ) return delta;
+      if( key.alt )
+        return;
 
       // Both Start/End deltas => note being dragged from mid grip => ensure equal quantization
-      if( delta.startDelta && delta.endDelta )
+      if( $.model.drag.startDelta && $.model.drag.endDelta )
       {
-        delta.startDelta = delta.endDelta = this.snapIndividualValue( delta.startDelta, targetNote.start );
-        return delta;
+        $.model.drag.startDelta = $.model.drag.endDelta = this.snapIndividualValue( $.model.drag.startDelta, targetNote.start );
+        return;
       }
 
       // Individual ends - Snap the start and endpoints to the grid
-      if( delta.startDelta ) delta.startDelta = this.snapIndividualValue( delta.startDelta, targetNote.start );
-      if( delta.endDelta   ) delta.endDelta   = this.snapIndividualValue( delta.endDelta  , targetNote.end   );
-      return delta;
+      if( $.model.drag.startDelta ) $.model.drag.startDelta = this.snapIndividualValue( $.model.drag.startDelta, targetNote.start );
+      if( $.model.drag.endDelta   ) $.model.drag.endDelta   = this.snapIndividualValue( $.model.drag.endDelta  , targetNote.end   );
     };
   $.model.snapIndividualValue = function(delta, value)
     {
@@ -549,13 +551,13 @@ var PIANO = (function(key){
         else
           return quantizedResult - value;
     };
-  $.model.selectNotesInBox    = function(startEvent, endEvent)
+  $.model.selectNotesInBox    = function(startX, startY, endX, endY)
     {
       // Given a 2 mouse events, set all the notes intersecting the resultant bounding box as selected
-      var bar1 = this.yCoordToBar( startEvent.clientY - this.canvas.clientXYDirectional('y') );
-      var key1 = this.xCoordToKey( startEvent.clientX - this.canvas.clientXYDirectional('x') );
-      var bar2 = this.yCoordToBar(   endEvent.clientY - this.canvas.clientXYDirectional('y') );
-      var key2 = this.xCoordToKey(   endEvent.clientX - this.canvas.clientXYDirectional('x') );
+      var bar1 = this.yCoordToBar( startY );
+      var key1 = this.xCoordToKey( startX );
+      var bar2 = this.yCoordToBar(   endY );
+      var key2 = this.xCoordToKey(   endX );
       var barMin = bar1 < bar2 ? bar1 : bar2;
       var barMax = bar1 > bar2 ? bar1 : bar2;
       var keyMin = key1 < key2 ? key1 : key2;
@@ -638,36 +640,37 @@ var PIANO = (function(key){
         $.model.canvasContext.stroke();
       }
     };
-  $.view.renderNotes      = function(params, livePreview)
+  $.view.renderNotes      = function(params)
     {
       for( var i = 0; i < $.model.notes.length; i++ )
       {
+        var currentNote = $.model.notes[i];
         $.model.canvasContext.beginPath();
         $.model.canvasContext.lineWidth   = 1.0;
         $.model.canvasContext.setLineDash([]);
 
         // Show the impending state of note selection
-        var shiftKeyDownAndNoteActive =  key.shift && ( $.model.notes[i].active   ^  $.model.notes[i].selected ); // If the shift key is down, we're trying to preview the exclusive union of active and selected notes as active (active keys would be deselected)
-        var shiftKeyUpAndNoteActive   = !key.shift && ( $.model.notes[i].selected || $.model.notes[i].active   ); // If the shift key is up, we're trying to preview ALL active and selected keys as active
+        var shiftKeyDownAndNoteActive =  key.shift && ( currentNote.active   ^  currentNote.selected ); // If the shift key is down, we're trying to preview the exclusive union of active and selected notes as active (active keys would be deselected)
+        var shiftKeyUpAndNoteActive   = !key.shift && ( currentNote.selected || currentNote.active   ); // If the shift key is up, we're trying to preview ALL active and selected keys as active
         if( shiftKeyDownAndNoteActive || shiftKeyUpAndNoteActive )
         {
-          var previewNote = {};
-              previewNote.start = params && params.startDelta ? $.model.notes[i].start + params.startDelta : $.model.notes[i].start;
-              previewNote.key   = params && params.keyDelta   ? $.model.notes[i].key   + params.keyDelta   : $.model.notes[i].key;
-              previewNote.end   = params && params.endDelta   ? $.model.notes[i].end   + params.endDelta   : $.model.notes[i].end;
+          var previewNote = { start: currentNote.start + $.model.drag.startDelta
+                            , key:   currentNote.key   + $.model.drag.keyDelta
+                            , end:   currentNote.end   + $.model.drag.endDelta
+                            };
           $.model.canvasContext.strokeStyle = "#000";
           $.model.canvasContext.fillStyle   = "#CFD";
           $.view.renderSingleNote( previewNote );
         }
         else
         {
-          var intensityFactor = $.model.notes[i].velocity / $.model.maxVelocity;
+          var intensityFactor = currentNote.velocity / $.model.maxVelocity;
           var r = Math.floor(   0 +   0*intensityFactor );
           var g = Math.floor( 127 + 128*intensityFactor );
           var b = Math.floor(   0 +   0*intensityFactor );
           $.model.canvasContext.strokeStyle = "#000";
           $.model.canvasContext.fillStyle   = "rgba("+r+','+g+','+b+',1)';
-          $.view.renderSingleNote( $.model.notes[i] );
+          $.view.renderSingleNote( currentNote );
         }
 
         $.model.canvasContext.stroke();
@@ -682,18 +685,21 @@ var PIANO = (function(key){
       $.model.canvasContext.fillRect  ( x1 + 2, y1 + 1, x2 - x1 - 3, y2 - y1 - 3 );
       $.model.canvasContext.strokeRect( x1 + 1, y1 + 0, x2 - x1 - 1, y2 - y1 - 1 );
     };
-  $.view.renderSelectBox  = function(startEvent,endEvent)
+  $.view.renderSelectBox  = function()
     {
-      var x0 = Math.closestHalfPixel( ( startEvent.clientX - $.model.canvas.clientXYDirectional('x') ) * $.model.pixelScale );
-      var y0 = Math.closestHalfPixel( ( startEvent.clientY - $.model.canvas.clientXYDirectional('y') ) * $.model.pixelScale );
-      var width  = Math.round( ( endEvent.clientX - startEvent.clientX) * $.model.pixelScale );
-      var height = Math.round( ( endEvent.clientY - startEvent.clientY) * $.model.pixelScale );
+      if( $.model.drag.action != 'select' )
+        return;
+
+      var x0 = Math.closestHalfPixel( $.model.drag.startX * $.model.pixelScale );
+      var y0 = Math.closestHalfPixel( $.model.drag.startY * $.model.pixelScale );
+      var width  = Math.round( ( $.model.drag.endX - $.model.drag.startX) * $.model.pixelScale );
+      var height = Math.round( ( $.model.drag.endY - $.model.drag.startY) * $.model.pixelScale );
       $.model.canvasContext.beginPath();
       $.model.canvasContext.lineWidth   = 1.0;
     //$.model.canvasContext.setLineDash([1,2]);
     //$.model.canvasContext.lineDashOffset++; // Marching Ants effect
-      $.model.canvasContext.strokeStyle = "rgba(0,0,0,0.5)";
-      $.model.canvasContext.fillStyle = "rgba(64,64,64,0.125)";
+      $.model.canvasContext.strokeStyle = "rgba(255,255,255,0.500)";
+      $.model.canvasContext.fillStyle   = "rgba(255,255,255,0.125)";
       $.model.canvasContext.fillRect(x0, y0, width, height);
       $.model.canvasContext.strokeRect(x0, y0, width, height);
       $.model.canvasContext.stroke();
@@ -707,6 +713,16 @@ var PIANO = (function(key){
       $.view.renderSingleNote( note );
       $.model.canvasContext.stroke();
     };
+  $.view.renderLoop       = function()
+    {
+      $.view.renderFreshGrid();
+      $.view.renderNotes();
+      $.view.renderSelectBox();
+
+      requestAnimationFrame($.view.renderLoop);
+    };
+
+
 
   return { initialize:      $.model.initialize
          , getAllNotes:     function(){ return $.model.notes; }

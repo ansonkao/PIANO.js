@@ -237,6 +237,9 @@ var PIANO = (function(key){
   $.controller.keyPress       = function()
     {
       key('ctrl+s', function(){ 
+        console.log( $.model.notes );
+        if(1) return false;
+
         for( var i = 0; i < $.model.notes.length; i++ )
         {
           console.log( '{ key: '  +$.model.notes[i].key              +
@@ -565,13 +568,12 @@ var PIANO = (function(key){
 
       for( var i = 0; i < this.notes.length; i++ )
       {
+        this.notes[i].selected = false;
         if(   this.notes[i].start < barMax )
           if( this.notes[i].end   > barMin )
             if(   this.notes[i].key < keyMax + 1 )
               if( this.notes[i].key > keyMin + 0 )
                 this.notes[i].selected = true;
-        else
-          this.notes[i].selected = false;
       }
 
       //$.model.getAverageVelocity();

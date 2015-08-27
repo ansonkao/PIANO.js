@@ -366,12 +366,12 @@ var PianoRoll = (function(key){
   $.modelPercentToBar        = function(percent){ return Math.ceil( percent * this.data.clipLength   ); }; // Where percent is between 0.000 and 1.000
   $.modelBarToPixels         = function(bar){ return ( ( bar / this.data.clipLength   )                         ) / this.modelGetTimeRange() * this.data.height; };
   $.modelKeyToPixels         = function(key){ return ( ( key / this.data.keyboardSize )                         ) / this.modelGetKeyRange()  * this.data.width;  };
-  $.modelBarToYCoord         = function(bar){ return ( ( bar / this.data.clipLength   ) - this.data.timeScale.min ) / this.modelGetTimeRange() * this.data.height; };
-  $.modelKeyToXCoord         = function(key){ return ( ( key / this.data.keyboardSize ) - this.data.keyScale.min  ) / this.modelGetKeyRange()  * this.data.width;  };
+  $.modelBarToYCoord         = function(bar){ return ( ( bar / this.data.clipLength   ) - this.data.timeScale.min ) / this.modelGetTimeRange() * (this.data.height - 20) + 10; };
+  $.modelKeyToXCoord         = function(key){ return ( ( key / this.data.keyboardSize ) - this.data.keyScale.min  ) / this.modelGetKeyRange()  *  this.data.width;             };
   $.modelPixelsToBar         = function(pixels){ return (         ( pixels ) / this.data.height * this.data.pixelScale * this.modelGetTimeRange()                          ) * this.data.clipLength;   };
   $.modelPixelsToKey         = function(pixels){ return ( 0.0 + ( ( pixels ) / this.data.width  * this.data.pixelScale * this.modelGetKeyRange()                         ) ) * this.data.keyboardSize; };
-  $.modelYCoordToBar         = function(yCoord){ return (         ( yCoord ) / this.data.height * this.data.pixelScale * this.modelGetTimeRange() + this.data.timeScale.min  ) * this.data.clipLength;   };
-  $.modelXCoordToKey         = function(xCoord){ return ( 0.0 + ( ( xCoord ) / this.data.width  * this.data.pixelScale * this.modelGetKeyRange()  + this.data.keyScale.min ) ) * this.data.keyboardSize; };
+  $.modelYCoordToBar         = function(yCoord){ return (         ( yCoord - 10 ) / ( this.data.height - 20 ) * this.data.pixelScale * this.modelGetTimeRange() + this.data.timeScale.min  ) * this.data.clipLength;   };
+  $.modelXCoordToKey         = function(xCoord){ return ( 0.0 + ( ( xCoord      ) /   this.data.width         * this.data.pixelScale * this.modelGetKeyRange()  + this.data.keyScale.min ) ) * this.data.keyboardSize; };
   $.modelSetViewport         = function(keyScaleMin, keyScaleMax, timeScaleMin, timeScaleMax)
     {
       // Update Viewport params
@@ -611,7 +611,8 @@ var PianoRoll = (function(key){
       // Draw lines for each beat
       var minBar = this.modelPercentToBar( this.data.timeScale.min ) - 1;
       var maxBar = this.modelPercentToBar( this.data.timeScale.max );
-      for( var bar = minBar; bar < maxBar; bar += 0.25 )
+      console.log( minBar, maxBar );
+      for( var bar = minBar; bar <= maxBar; bar += 0.25 )
       {
         // Start each line as a separate path (different colors)
         this.data.canvasContext.beginPath();

@@ -109,7 +109,7 @@ var Transport = (function(){
 
       var playStart = ctx.currentTime;
       var barsPerLoop = 4;
-      var notes = jQuery.extend( true, [], PIANO.getAllNotes() );
+      var notes = jQuery.extend( true, [], pianoRoll.data.notes );
       notes.sort(function(noteA, noteB){
         return noteA.start - noteB.start;
       });
@@ -118,12 +118,10 @@ var Transport = (function(){
       var newScheduleLooper = setInterval(function(){
 
         // Schedule up to the next 100 ms worth of notes
-        PIANO.refreshView();
         var startTime = getPlayTime( notes[0].start + loop*barsPerLoop, playStart );
         var   endTime = getPlayTime( notes[0].end   + loop*barsPerLoop, playStart );
         while( startTime <= ctx.currentTime + 0.40 )
         {
-          PIANO.renderLiveNote( notes[0] ); // REALLY BAD!!! TIGHTLY COUPLED, BREAK OUT VIA PUB SUB PATTERN
           playSingleNote( notes[0].key, notes[0].velocity, startTime + 0.1, endTime + 0.1); // Offset by 0.1s to prevent missed notes? TODO investigate!
           notes.splice(0,1);  // Remove from queue
           if( notes.length < 1)
@@ -136,7 +134,7 @@ var Transport = (function(){
         if( notes.length === 0)
         {
           loop++;
-          notes = jQuery.extend( true, [], PIANO.getAllNotes() );
+          notes = jQuery.extend( true, [], pianoRoll.data.notes );
           notes.sort(function(noteA, noteB){
             return noteA.start - noteB.start;
           });

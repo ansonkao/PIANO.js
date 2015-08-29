@@ -611,7 +611,6 @@ var PianoRoll = (function(key){
       // Draw lines for each beat
       var minBar = this.modelPercentToBar( this.data.timeScale.min ) - 1;
       var maxBar = this.modelPercentToBar( this.data.timeScale.max );
-      console.log( minBar, maxBar );
       for( var bar = minBar; bar <= maxBar; bar += 0.25 )
       {
         // Start each line as a separate path (different colors)
